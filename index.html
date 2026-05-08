@@ -14,20 +14,19 @@
         <div class="brand-mark">CII</div>
         <div>
           <h1>CII Report</h1>
-          <p>Monthly Generator</p>
+          <p>Monthly Grade Sheet</p>
         </div>
       </div>
 
       <nav class="nav">
         <a href="#upload" class="active">01 Upload</a>
-        <a href="#dashboard">02 Dashboard</a>
-        <a href="#de-vessels">03 D/E Vessels</a>
-        <a href="#monthly-grade">04 Monthly Grade</a>
+        <a href="#dashboard">02 Summary</a>
+        <a href="#grade-sheet">03 Grade Sheet</a>
       </nav>
 
       <div class="side-note">
-        <strong>처리 방식</strong>
-        <span>EXPORT 엑셀을 브라우저에서 직접 분석합니다. 원본 파일은 서버에 업로드되지 않습니다.</span>
+        <strong>조회 대상</strong>
+        <span>기존 CII 등급표의 선박 리스트만 표시합니다. EXPORT에 없는 선박은 등급 공란으로 표시됩니다.</span>
       </div>
     </aside>
 
@@ -35,10 +34,10 @@
       <section class="hero" id="upload">
         <div>
           <p class="eyebrow">Shipping ESG / CII Monthly Analysis</p>
-          <h2>CII 월간 데이터 자동 분석</h2>
+          <h2>CII 누적/월별 등급표 자동 생성</h2>
           <p class="hero-desc">
-            매월 EXPORT 파일을 업로드하면 등급 분포, D/E 선박 리스트, 월별 등급표,
-            보고용 엑셀 파일을 자동 생성합니다.
+            EXPORT 파일을 업로드하면 지정된 선박 리스트만 추출하여 누적등급, OWNER,
+            관리사, 선박, 최근 12개월 월별 등급표 형태로 정리합니다.
           </p>
         </div>
 
@@ -49,7 +48,7 @@
           <label for="fileInput">EXPORT Excel File</label>
           <input id="fileInput" type="file" accept=".xlsx,.xls" />
 
-          <button id="analyzeBtn" type="button">데이터 분석 시작</button>
+          <button id="analyzeBtn" type="button">등급표 생성</button>
           <p id="fileStatus" class="file-status">아직 파일이 선택되지 않았습니다.</p>
         </div>
       </section>
@@ -57,21 +56,21 @@
       <section class="validation-panel">
         <div>
           <h3>데이터 검증</h3>
-          <p>필수 컬럼과 분석 가능 선박 수를 확인합니다.</p>
+          <p>EXPORT 파일과 관리 대상 선박 리스트의 매칭 상태를 확인합니다.</p>
         </div>
         <div id="validationResult" class="validation-result">파일 업로드 후 표시됩니다.</div>
       </section>
 
       <section class="kpi-grid" id="dashboard">
         <article class="kpi-card">
-          <span>전체 선박</span>
-          <strong id="kpiTotal">-</strong>
-          <small>EXPORT 전체 행 기준</small>
+          <span>관리 대상</span>
+          <strong id="kpiTarget">-</strong>
+          <small>선박 리스트 기준</small>
         </article>
         <article class="kpi-card">
-          <span>CII 산출 대상</span>
-          <strong id="kpiValid">-</strong>
-          <small>Grade 존재 기준</small>
+          <span>EXPORT 매칭</span>
+          <strong id="kpiMatched">-</strong>
+          <small>Code 일치 기준</small>
         </article>
         <article class="kpi-card danger">
           <span>D/E 등급</span>
@@ -89,8 +88,8 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>등급 분포</h3>
-              <p>A~E 등급별 선박 수</p>
+              <h3>누적등급 분포</h3>
+              <p>관리 대상 선박 기준 A~E 등급별 척수 및 비율</p>
             </div>
           </div>
           <div id="gradeChart" class="grade-chart empty">분석 결과가 여기에 표시됩니다.</div>
@@ -108,71 +107,31 @@
         </div>
       </section>
 
-      <section class="panel" id="de-vessels">
-        <div class="panel-header">
-          <div>
-            <h3>D/E 등급 선박 리스트</h3>
-            <p>Rating, Attained CII, Required CII 기준으로 우선 관리 선박을 확인합니다.</p>
-          </div>
-          <div class="table-actions">
-            <input id="searchInput" type="search" placeholder="선박명 또는 Code 검색" />
-            <button id="downloadBtn" type="button">결과 엑셀 다운로드</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Code</th>
-                <th>Vessel</th>
-                <th>Grade</th>
-                <th>Rating</th>
-                <th>FOC</th>
-                <th>Distance</th>
-                <th>Avg Speed</th>
-                <th>Attained CII</th>
-                <th>Required CII</th>
-                <th>Risk</th>
-              </tr>
-            </thead>
-            <tbody id="deTableBody">
-              <tr><td colspan="11" class="empty-cell">분석 결과가 없습니다.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="panel" id="monthly-grade">
+      <section class="panel" id="grade-sheet">
         <div class="panel-header">
           <div>
             <h3>월별 CII 등급표</h3>
-            <p>EXPORT 파일의 1월~12월 등급을 선박별로 표시합니다.</p>
+            <p>누적등급 → OWNER → 관리사 → 선박 순으로 정렬합니다.</p>
+          </div>
+          <div class="table-actions">
+            <input id="searchInput" type="search" placeholder="OWNER / 관리사 / 선박 검색" />
+            <button id="downloadBtn" type="button">결과 엑셀 다운로드</button>
           </div>
         </div>
+
+        <div class="legend">
+          <span><b class="chip grade-A">A</b> Excellent</span>
+          <span><b class="chip grade-B">B</b> Good</span>
+          <span><b class="chip grade-C">C</b> Moderate</span>
+          <span><b class="chip grade-D">D</b> Warning</span>
+          <span><b class="chip grade-E">E</b> Critical</span>
+        </div>
+
         <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Vessel</th>
-                <th>Current</th>
-                <th>1월</th>
-                <th>2월</th>
-                <th>3월</th>
-                <th>4월</th>
-                <th>5월</th>
-                <th>6월</th>
-                <th>7월</th>
-                <th>8월</th>
-                <th>9월</th>
-                <th>10월</th>
-                <th>11월</th>
-                <th>12월</th>
-              </tr>
-            </thead>
-            <tbody id="monthlyTableBody">
-              <tr><td colspan="15" class="empty-cell">분석 결과가 없습니다.</td></tr>
+          <table class="grade-sheet-table">
+            <thead id="gradeSheetHead"></thead>
+            <tbody id="gradeSheetBody">
+              <tr><td class="empty-cell">분석 결과가 없습니다.</td></tr>
             </tbody>
           </table>
         </div>

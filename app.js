@@ -1,29 +1,1299 @@
-// CII Monthly Report Generator
-// - EXPORT 엑셀을 브라우저에서 직접 분석합니다.
-// - 서버 업로드 없이 사용 가능하므로 GitHub Pages 배포에 적합합니다.
+// CII Monthly Report Generator v2
+// 요청 반영 사항
+// 1) 기존 CII 등급표의 선박 리스트만 조회
+// 2) 누적등급 / OWNER / 관리사 / 선박 / 최근 12개월 표시
+// 3) 누적등급 → OWNER → 관리사 → 선박 순으로 정렬
+// 4) OWNER/관리사는 영어 항목을 먼저, 한글 항목을 뒤로 정렬
+
+const VESSEL_MASTER = [
+  {
+    "code": "HTVY",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "MJEP",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "OSVY",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SDTR",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "VTVY",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "NBTD",
+    "owner": "SKR",
+    "manager": "FLEET"
+  },
+  {
+    "code": "HKEP",
+    "owner": "HAS",
+    "manager": "SSM"
+  },
+  {
+    "code": "PCNB",
+    "owner": "실버마리타임",
+    "manager": "SYNERGY"
+  },
+  {
+    "code": "PCSG",
+    "owner": "실버마리타임",
+    "manager": "COLUMBIA"
+  },
+  {
+    "code": "PCSZ",
+    "owner": "실버마리타임",
+    "manager": "COLUMBIA"
+  },
+  {
+    "code": "HMVY",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SHVY",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "HAHM",
+    "owner": "HAS",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWTD",
+    "owner": "HAS",
+    "manager": "SSM"
+  },
+  {
+    "code": "PCBS",
+    "owner": "실버마리타임",
+    "manager": "SYNERGY"
+  },
+  {
+    "code": "ATPR",
+    "owner": "실버마리타임",
+    "manager": "COLUMBIA"
+  },
+  {
+    "code": "ATSH",
+    "owner": "실버마리타임",
+    "manager": "COLUMBIA"
+  },
+  {
+    "code": "PCBJ",
+    "owner": "실버마리타임",
+    "manager": "COLUMBIA"
+  },
+  {
+    "code": "PCTJ",
+    "owner": "실버마리타임",
+    "manager": "COLUMBIA"
+  },
+  {
+    "code": "AWBG",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "JKVY",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "KBTR",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "QDTR",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SKNT",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWAL",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWCP",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWMM",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWRG",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWSI",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "YKTD",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "HSWH",
+    "owner": "HSL",
+    "manager": "SSM"
+  },
+  {
+    "code": "HAHP",
+    "owner": "HAS",
+    "manager": "SSM"
+  },
+  {
+    "code": "HAJN",
+    "owner": "HAS",
+    "manager": "SSM"
+  },
+  {
+    "code": "HAKT",
+    "owner": "HAS",
+    "manager": "SSM"
+  },
+  {
+    "code": "HASR",
+    "owner": "HAS",
+    "manager": "SSM"
+  },
+  {
+    "code": "HAXM",
+    "owner": "HAS",
+    "manager": "SSM"
+  },
+  {
+    "code": "HAYN",
+    "owner": "HAS",
+    "manager": "SSM"
+  },
+  {
+    "code": "JHAB",
+    "owner": "HAS",
+    "manager": "SSM"
+  },
+  {
+    "code": "CNVY",
+    "owner": "SKR BBC",
+    "manager": "FLEET"
+  },
+  {
+    "code": "AKTR",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "HKVY",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SBVG",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWAT",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWDN",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWIC",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWPC",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWSH",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWSP",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWSR",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWVG",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "TYTR",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "LCVY",
+    "owner": "HAS",
+    "manager": "SSM"
+  },
+  {
+    "code": "NBVY",
+    "owner": "HAS",
+    "manager": "SSM"
+  },
+  {
+    "code": "ICVY",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "KYVY",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "MEBG",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "NGTR",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SDBG",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWBT",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWCG",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "SWXM",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "USVY",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "YSVY",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "YTTR",
+    "owner": "SKR",
+    "manager": "SSM"
+  },
+  {
+    "code": "MBBG",
+    "owner": "HAS",
+    "manager": "SSM"
+  },
+  {
+    "code": "QDVY",
+    "owner": "HAS",
+    "manager": "SSM"
+  },
+  {
+    "code": "TJVY",
+    "owner": "HAS",
+    "manager": "SSM"
+  }
+];
+
+const BASELINE_HISTORY = {
+  "HTVY": {
+    "2025-04": "E",
+    "2025-05": "E",
+    "2025-06": "E",
+    "2025-07": "E",
+    "2025-08": "E",
+    "2025-09": "E",
+    "2025-10": "E",
+    "2025-11": "D",
+    "2025-12": "D",
+    "2026-01": "E",
+    "2026-02": "D",
+    "2026-03": "E"
+  },
+  "MJEP": {
+    "2025-04": "",
+    "2025-05": "",
+    "2025-06": "",
+    "2025-07": "",
+    "2025-08": "",
+    "2025-09": "D",
+    "2025-10": "E",
+    "2025-11": "E",
+    "2025-12": "E",
+    "2026-01": "E",
+    "2026-02": "E",
+    "2026-03": "E"
+  },
+  "OSVY": {
+    "2025-04": "E",
+    "2025-05": "E",
+    "2025-06": "E",
+    "2025-07": "E",
+    "2025-08": "D",
+    "2025-09": "C",
+    "2025-10": "E",
+    "2025-11": "D",
+    "2025-12": "D",
+    "2026-01": "D",
+    "2026-02": "D",
+    "2026-03": "E"
+  },
+  "SDTR": {
+    "2025-04": "D",
+    "2025-05": "E",
+    "2025-06": "E",
+    "2025-07": "E",
+    "2025-08": "D",
+    "2025-09": "E",
+    "2025-10": "E",
+    "2025-11": "E",
+    "2025-12": "E",
+    "2026-01": "E",
+    "2026-02": "E",
+    "2026-03": "E"
+  },
+  "VTVY": {
+    "2025-04": "E",
+    "2025-05": "E",
+    "2025-06": "D",
+    "2025-07": "D",
+    "2025-08": "D",
+    "2025-09": "E",
+    "2025-10": "E",
+    "2025-11": "D",
+    "2025-12": "E",
+    "2026-01": "E",
+    "2026-02": "E",
+    "2026-03": "E"
+  },
+  "NBTD": {
+    "2025-04": "E",
+    "2025-05": "D",
+    "2025-06": "D",
+    "2025-07": "D",
+    "2025-08": "D",
+    "2025-09": "E",
+    "2025-10": "E",
+    "2025-11": "D",
+    "2025-12": "D",
+    "2026-01": "E",
+    "2026-02": "E",
+    "2026-03": "E"
+  },
+  "HKEP": {
+    "2025-04": "",
+    "2025-05": "",
+    "2025-06": "",
+    "2025-07": "",
+    "2025-08": "",
+    "2025-09": "",
+    "2025-10": "",
+    "2025-11": "",
+    "2025-12": "E",
+    "2026-01": "E",
+    "2026-02": "E",
+    "2026-03": "E"
+  },
+  "PCNB": {
+    "2025-04": "D",
+    "2025-05": "D",
+    "2025-06": "E",
+    "2025-07": "E",
+    "2025-08": "E",
+    "2025-09": "D",
+    "2025-10": "E",
+    "2025-11": "D",
+    "2025-12": "E",
+    "2026-01": "E",
+    "2026-02": "E",
+    "2026-03": "E"
+  },
+  "PCSG": {
+    "2025-04": "E",
+    "2025-05": "E",
+    "2025-06": "E",
+    "2025-07": "E",
+    "2025-08": "E",
+    "2025-09": "E",
+    "2025-10": "E",
+    "2025-11": "E",
+    "2025-12": "E",
+    "2026-01": "E",
+    "2026-02": "E",
+    "2026-03": "D"
+  },
+  "PCSZ": {
+    "2025-04": "E",
+    "2025-05": "E",
+    "2025-06": "E",
+    "2025-07": "E",
+    "2025-08": "E",
+    "2025-09": "E",
+    "2025-10": "E",
+    "2025-11": "E",
+    "2025-12": "E",
+    "2026-01": "E",
+    "2026-02": "E",
+    "2026-03": "E"
+  },
+  "HMVY": {
+    "2025-04": "D",
+    "2025-05": "C",
+    "2025-06": "D",
+    "2025-07": "D",
+    "2025-08": "D",
+    "2025-09": "D",
+    "2025-10": "C",
+    "2025-11": "E",
+    "2025-12": "D",
+    "2026-01": "E",
+    "2026-02": "C",
+    "2026-03": "D"
+  },
+  "SHVY": {
+    "2025-04": "C",
+    "2025-05": "C",
+    "2025-06": "C",
+    "2025-07": "E",
+    "2025-08": "C",
+    "2025-09": "D",
+    "2025-10": "D",
+    "2025-11": "C",
+    "2025-12": "A",
+    "2026-01": "C",
+    "2026-02": "D",
+    "2026-03": "C"
+  },
+  "HAHM": {
+    "2025-04": "D",
+    "2025-05": "D",
+    "2025-06": "E",
+    "2025-07": "D",
+    "2025-08": "E",
+    "2025-09": "D",
+    "2025-10": "E",
+    "2025-11": "E",
+    "2025-12": "D",
+    "2026-01": "D",
+    "2026-02": "D",
+    "2026-03": "D"
+  },
+  "SWTD": {
+    "2025-04": "D",
+    "2025-05": "C",
+    "2025-06": "C",
+    "2025-07": "C",
+    "2025-08": "D",
+    "2025-09": "C",
+    "2025-10": "D",
+    "2025-11": "D",
+    "2025-12": "D",
+    "2026-01": "E",
+    "2026-02": "D",
+    "2026-03": "C"
+  },
+  "PCBS": {
+    "2025-04": "E",
+    "2025-05": "E",
+    "2025-06": "D",
+    "2025-07": "C",
+    "2025-08": "A",
+    "2025-09": "B",
+    "2025-10": "D",
+    "2025-11": "D",
+    "2025-12": "E",
+    "2026-01": "E",
+    "2026-02": "E",
+    "2026-03": "D"
+  },
+  "ATPR": {
+    "2025-04": "B",
+    "2025-05": "D",
+    "2025-06": "D",
+    "2025-07": "E",
+    "2025-08": "E",
+    "2025-09": "E",
+    "2025-10": "E",
+    "2025-11": "E",
+    "2025-12": "E",
+    "2026-01": "E",
+    "2026-02": "E",
+    "2026-03": "E"
+  },
+  "ATSH": {
+    "2025-04": "C",
+    "2025-05": "D",
+    "2025-06": "D",
+    "2025-07": "D",
+    "2025-08": "D",
+    "2025-09": "D",
+    "2025-10": "D",
+    "2025-11": "D",
+    "2025-12": "E",
+    "2026-01": "E",
+    "2026-02": "C",
+    "2026-03": "C"
+  },
+  "PCBJ": {
+    "2025-04": "D",
+    "2025-05": "D",
+    "2025-06": "D",
+    "2025-07": "D",
+    "2025-08": "D",
+    "2025-09": "D",
+    "2025-10": "D",
+    "2025-11": "E",
+    "2025-12": "E",
+    "2026-01": "D",
+    "2026-02": "E",
+    "2026-03": "C"
+  },
+  "PCTJ": {
+    "2025-04": "D",
+    "2025-05": "D",
+    "2025-06": "D",
+    "2025-07": "D",
+    "2025-08": "D",
+    "2025-09": "D",
+    "2025-10": "E",
+    "2025-11": "E",
+    "2025-12": "E",
+    "2026-01": "E",
+    "2026-02": "C",
+    "2026-03": "C"
+  },
+  "AWBG": {
+    "2025-04": "D",
+    "2025-05": "D",
+    "2025-06": "C",
+    "2025-07": "",
+    "2025-08": "D",
+    "2025-09": "A",
+    "2025-10": "B",
+    "2025-11": "B",
+    "2025-12": "B",
+    "2026-01": "C",
+    "2026-02": "E",
+    "2026-03": "D"
+  },
+  "JKVY": {
+    "2025-04": "",
+    "2025-05": "",
+    "2025-06": "",
+    "2025-07": "",
+    "2025-08": "",
+    "2025-09": "",
+    "2025-10": "",
+    "2025-11": "E",
+    "2025-12": "C",
+    "2026-01": "C",
+    "2026-02": "C",
+    "2026-03": "C"
+  },
+  "KBTR": {
+    "2025-04": "C",
+    "2025-05": "B",
+    "2025-06": "B",
+    "2025-07": "C",
+    "2025-08": "C",
+    "2025-09": "B",
+    "2025-10": "C",
+    "2025-11": "C",
+    "2025-12": "C",
+    "2026-01": "C",
+    "2026-02": "C",
+    "2026-03": "D"
+  },
+  "QDTR": {
+    "2025-04": "B",
+    "2025-05": "B",
+    "2025-06": "D",
+    "2025-07": "D",
+    "2025-08": "C",
+    "2025-09": "D",
+    "2025-10": "C",
+    "2025-11": "C",
+    "2025-12": "C",
+    "2026-01": "B",
+    "2026-02": "B",
+    "2026-03": "B"
+  },
+  "SKNT": {
+    "2025-04": "C",
+    "2025-05": "C",
+    "2025-06": "C",
+    "2025-07": "C",
+    "2025-08": "C",
+    "2025-09": "C",
+    "2025-10": "C",
+    "2025-11": "C",
+    "2025-12": "D",
+    "2026-01": "E",
+    "2026-02": "C",
+    "2026-03": "A"
+  },
+  "SWAL": {
+    "2025-04": "D",
+    "2025-05": "C",
+    "2025-06": "B",
+    "2025-07": "C",
+    "2025-08": "A",
+    "2025-09": "B",
+    "2025-10": "B",
+    "2025-11": "A",
+    "2025-12": "C",
+    "2026-01": "C",
+    "2026-02": "C",
+    "2026-03": "A"
+  },
+  "SWCP": {
+    "2025-04": "C",
+    "2025-05": "C",
+    "2025-06": "B",
+    "2025-07": "C",
+    "2025-08": "C",
+    "2025-09": "C",
+    "2025-10": "B",
+    "2025-11": "B",
+    "2025-12": "B",
+    "2026-01": "B",
+    "2026-02": "A",
+    "2026-03": "B"
+  },
+  "SWMM": {
+    "2025-04": "C",
+    "2025-05": "C",
+    "2025-06": "C",
+    "2025-07": "C",
+    "2025-08": "B",
+    "2025-09": "C",
+    "2025-10": "C",
+    "2025-11": "B",
+    "2025-12": "B",
+    "2026-01": "C",
+    "2026-02": "A",
+    "2026-03": "B"
+  },
+  "SWRG": {
+    "2025-04": "C",
+    "2025-05": "C",
+    "2025-06": "D",
+    "2025-07": "D",
+    "2025-08": "D",
+    "2025-09": "C",
+    "2025-10": "D",
+    "2025-11": "D",
+    "2025-12": "D",
+    "2026-01": "E",
+    "2026-02": "E",
+    "2026-03": "C"
+  },
+  "SWSI": {
+    "2025-04": "B",
+    "2025-05": "C",
+    "2025-06": "C",
+    "2025-07": "C",
+    "2025-08": "B",
+    "2025-09": "C",
+    "2025-10": "B",
+    "2025-11": "C",
+    "2025-12": "B",
+    "2026-01": "D",
+    "2026-02": "A",
+    "2026-03": "B"
+  },
+  "YKTD": {
+    "2025-04": "B",
+    "2025-05": "B",
+    "2025-06": "C",
+    "2025-07": "A",
+    "2025-08": "A",
+    "2025-09": "A",
+    "2025-10": "A",
+    "2025-11": "A",
+    "2025-12": "A",
+    "2026-01": "B",
+    "2026-02": "B",
+    "2026-03": "B"
+  },
+  "HSWH": {
+    "2025-04": "",
+    "2025-05": "",
+    "2025-06": "",
+    "2025-07": "A",
+    "2025-08": "C",
+    "2025-09": "E",
+    "2025-10": "E",
+    "2025-11": "E",
+    "2025-12": "D",
+    "2026-01": "E",
+    "2026-02": "E",
+    "2026-03": "E"
+  },
+  "HAHP": {
+    "2025-04": "D",
+    "2025-05": "C",
+    "2025-06": "C",
+    "2025-07": "C",
+    "2025-08": "C",
+    "2025-09": "C",
+    "2025-10": "C",
+    "2025-11": "D",
+    "2025-12": "D",
+    "2026-01": "D",
+    "2026-02": "D",
+    "2026-03": "C"
+  },
+  "HAJN": {
+    "2025-04": "E",
+    "2025-05": "B",
+    "2025-06": "B",
+    "2025-07": "C",
+    "2025-08": "C",
+    "2025-09": "C",
+    "2025-10": "C",
+    "2025-11": "C",
+    "2025-12": "D",
+    "2026-01": "D",
+    "2026-02": "C",
+    "2026-03": "C"
+  },
+  "HAKT": {
+    "2025-04": "C",
+    "2025-05": "C",
+    "2025-06": "C",
+    "2025-07": "D",
+    "2025-08": "C",
+    "2025-09": "C",
+    "2025-10": "B",
+    "2025-11": "B",
+    "2025-12": "C",
+    "2026-01": "C",
+    "2026-02": "D",
+    "2026-03": "C"
+  },
+  "HASR": {
+    "2025-04": "D",
+    "2025-05": "C",
+    "2025-06": "C",
+    "2025-07": "C",
+    "2025-08": "C",
+    "2025-09": "C",
+    "2025-10": "E",
+    "2025-11": "C",
+    "2025-12": "C",
+    "2026-01": "C",
+    "2026-02": "C",
+    "2026-03": "C"
+  },
+  "HAXM": {
+    "2025-04": "C",
+    "2025-05": "C",
+    "2025-06": "C",
+    "2025-07": "C",
+    "2025-08": "C",
+    "2025-09": "D",
+    "2025-10": "D",
+    "2025-11": "B",
+    "2025-12": "C",
+    "2026-01": "C",
+    "2026-02": "C",
+    "2026-03": "C"
+  },
+  "HAYN": {
+    "2025-04": "C",
+    "2025-05": "B",
+    "2025-06": "B",
+    "2025-07": "C",
+    "2025-08": "C",
+    "2025-09": "C",
+    "2025-10": "C",
+    "2025-11": "C",
+    "2025-12": "C",
+    "2026-01": "C",
+    "2026-02": "C",
+    "2026-03": "C"
+  },
+  "JHAB": {
+    "2025-04": "C",
+    "2025-05": "C",
+    "2025-06": "D",
+    "2025-07": "D",
+    "2025-08": "C",
+    "2025-09": "D",
+    "2025-10": "C",
+    "2025-11": "D",
+    "2025-12": "D",
+    "2026-01": "D",
+    "2026-02": "D",
+    "2026-03": "E"
+  },
+  "CNVY": {
+    "2025-04": "B",
+    "2025-05": "B",
+    "2025-06": "B",
+    "2025-07": "A",
+    "2025-08": "A",
+    "2025-09": "A",
+    "2025-10": "C",
+    "2025-11": "B",
+    "2025-12": "C",
+    "2026-01": "C",
+    "2026-02": "C",
+    "2026-03": "B"
+  },
+  "AKTR": {
+    "2025-04": "C",
+    "2025-05": "C",
+    "2025-06": "B",
+    "2025-07": "C",
+    "2025-08": "C",
+    "2025-09": "B",
+    "2025-10": "C",
+    "2025-11": "A",
+    "2025-12": "A",
+    "2026-01": "B",
+    "2026-02": "C",
+    "2026-03": "C"
+  },
+  "HKVY": {
+    "2025-04": "A",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "A",
+    "2025-08": "C",
+    "2025-09": "B",
+    "2025-10": "A",
+    "2025-11": "C",
+    "2025-12": "C",
+    "2026-01": "C",
+    "2026-02": "C",
+    "2026-03": "C"
+  },
+  "SBVG": {
+    "2025-04": "C",
+    "2025-05": "B",
+    "2025-06": "A",
+    "2025-07": "B",
+    "2025-08": "A",
+    "2025-09": "D",
+    "2025-10": "E",
+    "2025-11": "C",
+    "2025-12": "B",
+    "2026-01": "A",
+    "2026-02": "B",
+    "2026-03": "B"
+  },
+  "SWAT": {
+    "2025-04": "C",
+    "2025-05": "C",
+    "2025-06": "C",
+    "2025-07": "B",
+    "2025-08": "A",
+    "2025-09": "B",
+    "2025-10": "B",
+    "2025-11": "C",
+    "2025-12": "C",
+    "2026-01": "B",
+    "2026-02": "B",
+    "2026-03": "C"
+  },
+  "SWDN": {
+    "2025-04": "B",
+    "2025-05": "B",
+    "2025-06": "B",
+    "2025-07": "B",
+    "2025-08": "B",
+    "2025-09": "B",
+    "2025-10": "C",
+    "2025-11": "C",
+    "2025-12": "C",
+    "2026-01": "B",
+    "2026-02": "A",
+    "2026-03": "B"
+  },
+  "SWIC": {
+    "2025-04": "C",
+    "2025-05": "C",
+    "2025-06": "B",
+    "2025-07": "A",
+    "2025-08": "B",
+    "2025-09": "B",
+    "2025-10": "A",
+    "2025-11": "B",
+    "2025-12": "B",
+    "2026-01": "B",
+    "2026-02": "B",
+    "2026-03": "B"
+  },
+  "SWPC": {
+    "2025-04": "B",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "A",
+    "2025-08": "C",
+    "2025-09": "B",
+    "2025-10": "B",
+    "2025-11": "A",
+    "2025-12": "A",
+    "2026-01": "C",
+    "2026-02": "B",
+    "2026-03": "C"
+  },
+  "SWSH": {
+    "2025-04": "B",
+    "2025-05": "C",
+    "2025-06": "C",
+    "2025-07": "C",
+    "2025-08": "C",
+    "2025-09": "B",
+    "2025-10": "B",
+    "2025-11": "A",
+    "2025-12": "A",
+    "2026-01": "A",
+    "2026-02": "A",
+    "2026-03": "B"
+  },
+  "SWSP": {
+    "2025-04": "C",
+    "2025-05": "C",
+    "2025-06": "B",
+    "2025-07": "B",
+    "2025-08": "B",
+    "2025-09": "C",
+    "2025-10": "B",
+    "2025-11": "B",
+    "2025-12": "B",
+    "2026-01": "C",
+    "2026-02": "B",
+    "2026-03": "B"
+  },
+  "SWSR": {
+    "2025-04": "A",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "A",
+    "2025-08": "C",
+    "2025-09": "B",
+    "2025-10": "C",
+    "2025-11": "C",
+    "2025-12": "C",
+    "2026-01": "B",
+    "2026-02": "B",
+    "2026-03": "B"
+  },
+  "SWVG": {
+    "2025-04": "B",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "A",
+    "2025-08": "B",
+    "2025-09": "B",
+    "2025-10": "D",
+    "2025-11": "D",
+    "2025-12": "D",
+    "2026-01": "C",
+    "2026-02": "C",
+    "2026-03": "C"
+  },
+  "TYTR": {
+    "2025-04": "B",
+    "2025-05": "B",
+    "2025-06": "A",
+    "2025-07": "B",
+    "2025-08": "A",
+    "2025-09": "B",
+    "2025-10": "A",
+    "2025-11": "B",
+    "2025-12": "C",
+    "2026-01": "C",
+    "2026-02": "C",
+    "2026-03": "C"
+  },
+  "LCVY": {
+    "2025-04": "A",
+    "2025-05": "B",
+    "2025-06": "A",
+    "2025-07": "A",
+    "2025-08": "A",
+    "2025-09": "A",
+    "2025-10": "A",
+    "2025-11": "B",
+    "2025-12": "B",
+    "2026-01": "A",
+    "2026-02": "B",
+    "2026-03": "A"
+  },
+  "NBVY": {
+    "2025-04": "B",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "A",
+    "2025-08": "C",
+    "2025-09": "C",
+    "2025-10": "C",
+    "2025-11": "C",
+    "2025-12": "B",
+    "2026-01": "B",
+    "2026-02": "A",
+    "2026-03": "A"
+  },
+  "ICVY": {
+    "2025-04": "A",
+    "2025-05": "A",
+    "2025-06": "B",
+    "2025-07": "B",
+    "2025-08": "A",
+    "2025-09": "A",
+    "2025-10": "A",
+    "2025-11": "B",
+    "2025-12": "B",
+    "2026-01": "A",
+    "2026-02": "B",
+    "2026-03": "B"
+  },
+  "KYVY": {
+    "2025-04": "A",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "A",
+    "2025-08": "A",
+    "2025-09": "A",
+    "2025-10": "A",
+    "2025-11": "A",
+    "2025-12": "A",
+    "2026-01": "A",
+    "2026-02": "A",
+    "2026-03": "B"
+  },
+  "MEBG": {
+    "2025-04": "A",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "A",
+    "2025-08": "A",
+    "2025-09": "A",
+    "2025-10": "A",
+    "2025-11": "A",
+    "2025-12": "A",
+    "2026-01": "A",
+    "2026-02": "A",
+    "2026-03": "A"
+  },
+  "NGTR": {
+    "2025-04": "E",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "A",
+    "2025-08": "A",
+    "2025-09": "C",
+    "2025-10": "A",
+    "2025-11": "A",
+    "2025-12": "A",
+    "2026-01": "B",
+    "2026-02": "C",
+    "2026-03": "C"
+  },
+  "SDBG": {
+    "2025-04": "A",
+    "2025-05": "B",
+    "2025-06": "A",
+    "2025-07": "C",
+    "2025-08": "E",
+    "2025-09": "A",
+    "2025-10": "A",
+    "2025-11": "A",
+    "2025-12": "A",
+    "2026-01": "A",
+    "2026-02": "B",
+    "2026-03": "A"
+  },
+  "SWBT": {
+    "2025-04": "A",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "C",
+    "2025-08": "B",
+    "2025-09": "B",
+    "2025-10": "A",
+    "2025-11": "A",
+    "2025-12": "C",
+    "2026-01": "A",
+    "2026-02": "B",
+    "2026-03": "D"
+  },
+  "SWCG": {
+    "2025-04": "A",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "B",
+    "2025-08": "A",
+    "2025-09": "A",
+    "2025-10": "A",
+    "2025-11": "B",
+    "2025-12": "C",
+    "2026-01": "E",
+    "2026-02": "A",
+    "2026-03": "A"
+  },
+  "SWXM": {
+    "2025-04": "B",
+    "2025-05": "B",
+    "2025-06": "B",
+    "2025-07": "A",
+    "2025-08": "A",
+    "2025-09": "A",
+    "2025-10": "A",
+    "2025-11": "A",
+    "2025-12": "A",
+    "2026-01": "A",
+    "2026-02": "A",
+    "2026-03": "A"
+  },
+  "USVY": {
+    "2025-04": "A",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "A",
+    "2025-08": "A",
+    "2025-09": "A",
+    "2025-10": "A",
+    "2025-11": "A",
+    "2025-12": "A",
+    "2026-01": "A",
+    "2026-02": "A",
+    "2026-03": "A"
+  },
+  "YSVY": {
+    "2025-04": "A",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "B",
+    "2025-08": "B",
+    "2025-09": "A",
+    "2025-10": "A",
+    "2025-11": "A",
+    "2025-12": "A",
+    "2026-01": "A",
+    "2026-02": "A",
+    "2026-03": "A"
+  },
+  "YTTR": {
+    "2025-04": "A",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "A",
+    "2025-08": "A",
+    "2025-09": "A",
+    "2025-10": "E",
+    "2025-11": "A",
+    "2025-12": "A",
+    "2026-01": "B",
+    "2026-02": "A",
+    "2026-03": "A"
+  },
+  "MBBG": {
+    "2025-04": "A",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "A",
+    "2025-08": "A",
+    "2025-09": "A",
+    "2025-10": "A",
+    "2025-11": "A",
+    "2025-12": "A",
+    "2026-01": "A",
+    "2026-02": "A",
+    "2026-03": "A"
+  },
+  "QDVY": {
+    "2025-04": "C",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "A",
+    "2025-08": "A",
+    "2025-09": "A",
+    "2025-10": "A",
+    "2025-11": "A",
+    "2025-12": "B",
+    "2026-01": "A",
+    "2026-02": "C",
+    "2026-03": "A"
+  },
+  "TJVY": {
+    "2025-04": "B",
+    "2025-05": "A",
+    "2025-06": "A",
+    "2025-07": "B",
+    "2025-08": "A",
+    "2025-09": "A",
+    "2025-10": "A",
+    "2025-11": "A",
+    "2025-12": "A",
+    "2026-01": "B",
+    "2026-02": "A",
+    "2026-03": "A"
+  }
+};
 
 const state = {
-  rawRows: [],
-  vessels: [],
-  deVessels: [],
-  gradeCounts: {},
+  exportRows: [],
+  exportMap: new Map(),
+  reportRows: [],
+  gradeCounts: { A: 0, B: 0, C: 0, D: 0, E: 0, X: 0 },
+  periods: [],
   workbookName: "",
 };
 
-const requiredColumns = [
-  "Name",
-  "Code",
-  "DWT",
-  "Hours",
-  "FOC",
-  "Distance",
-  "Avg Speed",
-  "Grade",
-  "Rating(%)",
-  "Attained CII",
-  "Required CII",
-];
-
+const gradeOrder = { E: 1, D: 2, C: 3, B: 4, A: 5, X: 6 };
 const monthLabels = Array.from({ length: 12 }, (_, i) => String(i + 1));
 
 const fileInput = document.getElementById("fileInput");
@@ -40,7 +1310,7 @@ fileInput.addEventListener("change", () => {
 });
 
 analyzeBtn.addEventListener("click", handleAnalyze);
-searchInput.addEventListener("input", () => renderDETable(filterDEVessels(searchInput.value)));
+searchInput.addEventListener("input", () => renderGradeSheet(filterRows(searchInput.value)));
 downloadBtn.addEventListener("click", downloadReport);
 copySummaryBtn.addEventListener("click", copySummary);
 
@@ -64,28 +1334,26 @@ async function handleAnalyze() {
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
 
-    // header: 1 옵션으로 배열 형태로 읽은 뒤, EXPORT 파일의 2번째 행을 실제 헤더로 사용합니다.
     const rows = XLSX.utils.sheet_to_json(worksheet, {
       header: 1,
       defval: "",
       raw: false,
     });
 
-    const parsed = parseExportRows(rows);
-    state.rawRows = rows;
-    state.vessels = parsed.vessels;
-    state.deVessels = parsed.vessels.filter((v) => ["D", "E"].includes(v.grade));
-    state.gradeCounts = countGrades(parsed.vessels);
     state.workbookName = file.name;
+    state.exportRows = rows;
+    state.exportMap = parseExportRows(rows);
+    state.periods = getRecent12Periods(document.getElementById("reportMonth").value);
+    state.reportRows = buildReportRows();
+    state.gradeCounts = countGrades(state.reportRows);
 
-    renderValidation(parsed);
+    renderValidation();
     renderDashboard();
     renderGradeChart();
-    renderDETable(state.deVessels);
-    renderMonthlyTable(state.vessels);
+    renderGradeSheet(state.reportRows);
     renderSummary();
 
-    fileStatus.textContent = `분석 완료: ${file.name}`;
+    fileStatus.textContent = `등급표 생성 완료: ${file.name}`;
   } catch (error) {
     console.error(error);
     alert("파일 분석 중 오류가 발생했습니다. EXPORT 파일 양식이 맞는지 확인해 주세요.");
@@ -94,53 +1362,52 @@ async function handleAnalyze() {
 }
 
 function parseExportRows(rows) {
-  if (!rows || rows.length < 3) {
-    throw new Error("No data rows");
-  }
-
-  // 첨부 EXPORT 기준:
-  // 1행: 그룹 헤더, 2행: 실제 컬럼명, 3행부터 데이터
   const headerRowIndex = detectHeaderRow(rows);
   const header = rows[headerRowIndex].map((cell) => String(cell).trim());
   const dataRows = rows.slice(headerRowIndex + 1);
-
   const index = buildColumnIndex(header);
-  const missingColumns = requiredColumns.filter((col) => index[col] === undefined);
+  const result = new Map();
 
-  const vessels = dataRows
-    .map((row) => normalizeVessel(row, index))
-    .filter((v) => v.name || v.code);
+  dataRows.forEach((row) => {
+    const code = String(getCell(row, index.Code)).trim().toUpperCase();
+    if (!code) return;
 
-  return {
-    header,
-    index,
-    missingColumns,
-    vessels,
-    totalRows: vessels.length,
-    validRows: vessels.filter((v) => v.grade).length,
-  };
+    const monthly = {};
+    monthLabels.forEach((month) => {
+      monthly[month] = cleanGrade(getCell(row, index[`month_${month}`]));
+    });
+
+    result.set(code, {
+      code,
+      name: getCell(row, index.Name),
+      grade: cleanGrade(getCell(row, index.Grade)),
+      monthly,
+      rating: toNumber(getCell(row, index["Rating(%)"])),
+      attainedCii: toNumber(getCell(row, index["Attained CII"])),
+      requiredCii: toNumber(getCell(row, index["Required CII"])),
+    });
+  });
+
+  return result;
 }
 
 function detectHeaderRow(rows) {
-  const candidates = rows.slice(0, 8);
-
+  const candidates = rows.slice(0, 10);
   for (let i = 0; i < candidates.length; i += 1) {
     const normalized = candidates[i].map((cell) => String(cell).trim());
     if (normalized.includes("Name") && normalized.includes("Code") && normalized.includes("Grade")) {
       return i;
     }
   }
-
-  // 첨부 EXPORT 파일 기본값
   return 1;
 }
 
 function buildColumnIndex(header) {
   const index = {};
+
   header.forEach((name, colIndex) => {
     if (!name) return;
 
-    // 1~12월 컬럼은 Month 그룹 아래 숫자만 들어오므로 별도 관리합니다.
     if (monthLabels.includes(name) && index[`month_${name}`] === undefined) {
       index[`month_${name}`] = colIndex;
       return;
@@ -154,327 +1421,349 @@ function buildColumnIndex(header) {
   return index;
 }
 
-function normalizeVessel(row, index) {
-  const grade = cleanGrade(getCell(row, index.Grade));
-  const required = toNumber(getCell(row, index["Required CII"]));
-  const attained = toNumber(getCell(row, index["Attained CII"]));
-  const ratingFromFile = toNumber(getCell(row, index["Rating(%)"]));
-  const calculatedRating = required > 0 && attained > 0 ? (attained / required) * 100 : null;
+function buildReportRows() {
+  const rows = VESSEL_MASTER.map((master) => {
+    const code = String(master.code).trim().toUpperCase();
+    const exportItem = state.exportMap.get(code);
 
-  const monthly = {};
-  monthLabels.forEach((month) => {
-    monthly[month] = cleanGrade(getCell(row, index[`month_${month}`]));
+    const monthly = {};
+    state.periods.forEach((period) => {
+      const key = period.key;
+      const fromExport = getGradeFromExportPeriod(exportItem, period);
+      const fromBaseline = BASELINE_HISTORY[code]?.[key] || "";
+      monthly[key] = fromExport || fromBaseline || "";
+    });
+
+    const currentGrade =
+      exportItem?.grade ||
+      monthly[state.periods[state.periods.length - 1]?.key] ||
+      "X";
+
+    return {
+      code,
+      owner: master.owner,
+      manager: master.manager,
+      vessel: exportItem?.name || code,
+      grade: currentGrade,
+      monthly,
+      matched: Boolean(exportItem),
+      rating: exportItem?.rating ?? null,
+      attainedCii: exportItem?.attainedCii ?? null,
+      requiredCii: exportItem?.requiredCii ?? null,
+    };
   });
 
-  const rating = ratingFromFile || calculatedRating;
-
-  return {
-    no: toNumber(getCell(row, index.No)),
-    type: getCell(row, index.Type),
-    name: getCell(row, index.Name),
-    code: getCell(row, index.Code),
-    deliveryDate: getCell(row, index["Delivery Date"]),
-    dwt: toNumber(getCell(row, index.DWT)),
-    hours: toNumber(getCell(row, index.Hours)),
-    foc: toNumber(getCell(row, index.FOC)),
-    distance: toNumber(getCell(row, index.Distance)),
-    avgSpeed: toNumber(getCell(row, index["Avg Speed"])),
-    grade,
-    monthly,
-    focPerDay: toNumber(getCell(row, index["FOC(mt/day)"])),
-    rating,
-    attainedCii: attained,
-    requiredCii: required,
-    risk: getRiskLabel(grade, rating),
-  };
+  return rows.sort(compareReportRows);
 }
 
-function getCell(row, idx) {
-  if (idx === undefined || idx === null) return "";
-  return row[idx] ?? "";
+function getGradeFromExportPeriod(exportItem, period) {
+  if (!exportItem) return "";
+
+  // EXPORT 파일의 1~12 컬럼은 선택한 보고연도 기준 월별 등급으로 간주합니다.
+  const selectedYear = Number(document.getElementById("reportMonth").value.slice(0, 4));
+  if (period.year === selectedYear) {
+    return exportItem.monthly[String(period.month)] || "";
+  }
+
+  return "";
 }
 
-function cleanGrade(value) {
-  const grade = String(value || "").trim().toUpperCase();
-  return ["A", "B", "C", "D", "E"].includes(grade) ? grade : "";
+function compareReportRows(a, b) {
+  return (
+    (gradeOrder[a.grade] || gradeOrder.X) - (gradeOrder[b.grade] || gradeOrder.X) ||
+    compareMixedText(a.owner, b.owner) ||
+    compareMixedText(a.manager, b.manager) ||
+    String(a.code).localeCompare(String(b.code), "en")
+  );
 }
 
-function toNumber(value) {
-  if (value === null || value === undefined || value === "") return null;
-  const num = Number(String(value).replace(/,/g, "").replace("%", ""));
-  return Number.isFinite(num) ? num : null;
+function compareMixedText(a, b) {
+  const aa = String(a || "");
+  const bb = String(b || "");
+  const ak = hasKorean(aa);
+  const bk = hasKorean(bb);
+
+  if (ak !== bk) return ak ? 1 : -1;
+  return aa.localeCompare(bb, ak ? "ko" : "en", { sensitivity: "base" });
 }
 
-function formatNumber(value, digits = 1) {
-  if (value === null || value === undefined || value === "") return "-";
-  return Number(value).toLocaleString("en-US", {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  });
+function hasKorean(value) {
+  return /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(value);
 }
 
-function formatInteger(value) {
-  if (value === null || value === undefined || value === "") return "-";
-  return Number(value).toLocaleString("en-US", { maximumFractionDigits: 0 });
+function getRecent12Periods(monthValue) {
+  const [year, month] = monthValue.split("-").map(Number);
+  const periods = [];
+
+  for (let offset = 11; offset >= 0; offset -= 1) {
+    const date = new Date(year, month - 1 - offset, 1);
+    const y = date.getFullYear();
+    const m = date.getMonth() + 1;
+    periods.push({
+      year: y,
+      month: m,
+      key: `${y}-${String(m).padStart(2, "0")}`,
+      label: `${m}월`,
+    });
+  }
+
+  return periods;
 }
 
-function formatRating(value) {
-  if (value === null || value === undefined || value === "") return "-";
-  return `${Math.round(Number(value))}%`;
-}
-
-function countGrades(vessels) {
-  const counts = { A: 0, B: 0, C: 0, D: 0, E: 0 };
-  vessels.forEach((v) => {
-    if (counts[v.grade] !== undefined) {
-      counts[v.grade] += 1;
-    }
+function countGrades(rows) {
+  const counts = { A: 0, B: 0, C: 0, D: 0, E: 0, X: 0 };
+  rows.forEach((row) => {
+    const grade = ["A", "B", "C", "D", "E"].includes(row.grade) ? row.grade : "X";
+    counts[grade] += 1;
   });
   return counts;
 }
 
-function getRiskLabel(grade, rating) {
-  if (grade === "E" || Number(rating) >= 120) return "High Risk";
-  if (grade === "D" || Number(rating) >= 110) return "Watch";
-  return "Normal";
-}
-
-function renderValidation(parsed) {
-  const missing = parsed.missingColumns.length
-    ? `<span class="risk-high">누락 컬럼: ${parsed.missingColumns.join(", ")}</span>`
-    : `<span class="risk-normal">필수 컬럼 정상</span>`;
+function renderValidation() {
+  const target = VESSEL_MASTER.length;
+  const matched = state.reportRows.filter((row) => row.matched).length;
+  const missing = state.reportRows.filter((row) => !row.matched).map((row) => row.code);
 
   validationResult.innerHTML = `
-    전체 선박: <strong>${parsed.totalRows}</strong>척<br>
-    CII 산출 대상: <strong>${parsed.validRows}</strong>척<br>
-    D/E 등급: <strong>${state.deVessels.length}</strong>척<br>
-    ${missing}
+    관리 대상 선박: <strong>${target}</strong>척<br>
+    EXPORT 매칭 선박: <strong>${matched}</strong>척<br>
+    미매칭 선박: <strong>${target - matched}</strong>척<br>
+    ${missing.length ? `<span class="risk-high">미매칭: ${missing.slice(0, 8).join(", ")}${missing.length > 8 ? "..." : ""}</span>` : `<span class="risk-normal">전체 선박 매칭 정상</span>`}
   `;
 }
 
 function renderDashboard() {
-  const total = state.vessels.length;
-  const valid = state.vessels.filter((v) => v.grade).length;
-  const eCount = state.gradeCounts.E || 0;
+  const matched = state.reportRows.filter((row) => row.matched).length;
+  const deCount = (state.gradeCounts.D || 0) + (state.gradeCounts.E || 0);
 
-  document.getElementById("kpiTotal").textContent = total;
-  document.getElementById("kpiValid").textContent = valid;
-  document.getElementById("kpiDE").textContent = state.deVessels.length;
-  document.getElementById("kpiE").textContent = eCount;
+  document.getElementById("kpiTarget").textContent = VESSEL_MASTER.length;
+  document.getElementById("kpiMatched").textContent = matched;
+  document.getElementById("kpiDE").textContent = deCount;
+  document.getElementById("kpiE").textContent = state.gradeCounts.E || 0;
 }
 
 function renderGradeChart() {
   const container = document.getElementById("gradeChart");
-  const max = Math.max(...Object.values(state.gradeCounts), 1);
-  const grades = ["A", "B", "C", "D", "E"];
+  const grades = ["E", "D", "C", "B", "A"];
+  const total = state.reportRows.filter((row) => ["A", "B", "C", "D", "E"].includes(row.grade)).length || 1;
+  const max = Math.max(...grades.map((grade) => state.gradeCounts[grade] || 0), 1);
 
   container.classList.remove("empty");
-  container.innerHTML = grades
-    .map((grade) => {
-      const count = state.gradeCounts[grade] || 0;
-      const width = Math.max((count / max) * 100, count > 0 ? 5 : 0);
-      return `
-        <div class="grade-row">
-          <div class="grade-label"><span class="grade-badge grade-${grade}">${grade}</span></div>
-          <div class="grade-track">
-            <div class="grade-bar grade-bar-${grade}" style="width:${width}%"></div>
-          </div>
-          <div class="grade-count">${count}척</div>
+  container.innerHTML = grades.map((grade) => {
+    const count = state.gradeCounts[grade] || 0;
+    const pct = Math.round((count / total) * 100);
+    const width = Math.max((count / max) * 100, count > 0 ? 5 : 0);
+
+    return `
+      <div class="grade-row">
+        <div class="grade-label"><span class="chip grade-${grade}">${grade}등급</span></div>
+        <div class="grade-track">
+          <div class="grade-bar grade-${grade}" style="width:${width}%"></div>
         </div>
-      `;
-    })
-    .join("");
+        <div class="grade-count">${count}척 / ${pct}%</div>
+      </div>
+    `;
+  }).join("");
 }
 
-function renderDETable(vessels) {
-  const tbody = document.getElementById("deTableBody");
+function renderGradeSheet(rows) {
+  renderGradeSheetHeader();
 
-  if (!vessels.length) {
-    tbody.innerHTML = `<tr><td colspan="11" class="empty-cell">D/E 등급 선박이 없습니다.</td></tr>`;
+  const tbody = document.getElementById("gradeSheetBody");
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="${4 + state.periods.length}" class="empty-cell">표시할 선박이 없습니다.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = vessels
-    .map((v, idx) => {
-      const riskClass = v.risk === "High Risk" ? "risk-high" : v.risk === "Watch" ? "risk-watch" : "risk-normal";
-      return `
-        <tr>
-          <td>${idx + 1}</td>
-          <td>${escapeHtml(v.code)}</td>
-          <td>${escapeHtml(v.name)}</td>
-          <td><span class="grade-badge grade-${v.grade}">${v.grade}</span></td>
-          <td>${formatRating(v.rating)}</td>
-          <td>${formatNumber(v.foc, 1)}</td>
-          <td>${formatNumber(v.distance, 1)}</td>
-          <td>${formatNumber(v.avgSpeed, 1)}</td>
-          <td>${formatNumber(v.attainedCii, 2)}</td>
-          <td>${formatNumber(v.requiredCii, 2)}</td>
-          <td class="${riskClass}">${v.risk}</td>
-        </tr>
-      `;
-    })
-    .join("");
+  const rowSpans = calculateRowSpans(rows);
+  const totalValid = rows.filter((row) => ["A", "B", "C", "D", "E"].includes(row.grade)).length || 1;
+
+  tbody.innerHTML = rows.map((row, idx) => {
+    const cells = [];
+
+    const gradeKey = row.grade;
+    if (rowSpans.grade[idx]) {
+      const count = state.gradeCounts[gradeKey] || 0;
+      const pct = Math.round((count / totalValid) * 100);
+      const label = gradeKey === "X"
+        ? `미산출<br>${count}척`
+        : `${gradeKey}등급<br>${count}척<br>${pct}%`;
+
+      cells.push(`<td rowspan="${rowSpans.grade[idx]}" class="group-cell group-${gradeKey}">${label}</td>`);
+    }
+
+    if (rowSpans.owner[idx]) {
+      cells.push(`<td rowspan="${rowSpans.owner[idx]}" class="owner-cell">${escapeHtml(row.owner)}</td>`);
+    }
+
+    if (rowSpans.manager[idx]) {
+      cells.push(`<td rowspan="${rowSpans.manager[idx]}" class="manager-cell">${escapeHtml(row.manager)}</td>`);
+    }
+
+    cells.push(`<td class="vessel-cell">${escapeHtml(row.code)}</td>`);
+
+    state.periods.forEach((period) => {
+      const grade = row.monthly[period.key] || "";
+      cells.push(`<td class="month-cell grade-${grade || "blank"}">${grade || ""}</td>`);
+    });
+
+    return `<tr>${cells.join("")}</tr>`;
+  }).join("");
 }
 
-function renderMonthlyTable(vessels) {
-  const tbody = document.getElementById("monthlyTableBody");
-  const valid = vessels.filter((v) => v.grade);
+function renderGradeSheetHeader() {
+  const thead = document.getElementById("gradeSheetHead");
+  const yearGroups = [];
 
-  if (!valid.length) {
-    tbody.innerHTML = `<tr><td colspan="15" class="empty-cell">월별 등급 데이터가 없습니다.</td></tr>`;
-    return;
+  state.periods.forEach((period) => {
+    const last = yearGroups[yearGroups.length - 1];
+    if (last && last.year === period.year) {
+      last.count += 1;
+    } else {
+      yearGroups.push({ year: period.year, count: 1 });
+    }
+  });
+
+  const yearCells = yearGroups
+    .map((group) => `<th colspan="${group.count}" class="year-head">${group.year}년</th>`)
+    .join("");
+
+  const monthCells = state.periods
+    .map((period) => `<th class="month-head">${period.label}</th>`)
+    .join("");
+
+  thead.innerHTML = `
+    <tr>
+      <th rowspan="2" class="static-head">누적등급<br>(${String(state.periods[state.periods.length - 1].year).slice(2)}년)</th>
+      <th rowspan="2" class="static-head">OWNER</th>
+      <th rowspan="2" class="static-head">관리사</th>
+      <th rowspan="2" class="static-head">선박</th>
+      ${yearCells}
+    </tr>
+    <tr>${monthCells}</tr>
+  `;
+}
+
+function calculateRowSpans(rows) {
+  const grade = {};
+  const owner = {};
+  const manager = {};
+
+  for (let i = 0; i < rows.length; i += 1) {
+    if (i === 0 || rows[i].grade !== rows[i - 1].grade) {
+      grade[i] = countSameFrom(rows, i, (a, b) => a.grade === b.grade);
+    }
+
+    if (
+      i === 0 ||
+      rows[i].grade !== rows[i - 1].grade ||
+      rows[i].owner !== rows[i - 1].owner
+    ) {
+      owner[i] = countSameFrom(rows, i, (a, b) => a.grade === b.grade && a.owner === b.owner);
+    }
+
+    if (
+      i === 0 ||
+      rows[i].grade !== rows[i - 1].grade ||
+      rows[i].owner !== rows[i - 1].owner ||
+      rows[i].manager !== rows[i - 1].manager
+    ) {
+      manager[i] = countSameFrom(rows, i, (a, b) =>
+        a.grade === b.grade &&
+        a.owner === b.owner &&
+        a.manager === b.manager
+      );
+    }
   }
 
-  tbody.innerHTML = valid
-    .map((v) => {
-      const monthCells = monthLabels
-        .map((month) => {
-          const grade = v.monthly[month];
-          return `<td>${grade ? `<span class="grade-badge grade-${grade}">${grade}</span>` : "-"}</td>`;
-        })
-        .join("");
+  return { grade, owner, manager };
+}
 
-      return `
-        <tr>
-          <td>${escapeHtml(v.code)}</td>
-          <td>${escapeHtml(v.name)}</td>
-          <td>${v.grade ? `<span class="grade-badge grade-${v.grade}">${v.grade}</span>` : "-"}</td>
-          ${monthCells}
-        </tr>
-      `;
-    })
-    .join("");
+function countSameFrom(rows, start, predicate) {
+  let count = 1;
+  for (let i = start + 1; i < rows.length; i += 1) {
+    if (!predicate(rows[start], rows[i])) break;
+    count += 1;
+  }
+  return count;
 }
 
 function renderSummary() {
   const reportMonth = document.getElementById("reportMonth").value;
   const monthText = reportMonth ? reportMonth.replace("-", "년 ") + "월" : "해당 월";
-  const valid = state.vessels.filter((v) => v.grade).length;
-  const deCount = state.deVessels.length;
-  const eCount = state.gradeCounts.E || 0;
-  const dCount = state.gradeCounts.D || 0;
-  const deRatio = valid ? Math.round((deCount / valid) * 100) : 0;
-
-  const highRiskNames = state.deVessels
-    .filter((v) => v.risk === "High Risk")
-    .slice(0, 5)
-    .map((v) => `${v.code || v.name}(${v.grade}/${formatRating(v.rating)})`)
-    .join(", ");
+  const total = state.reportRows.filter((row) => ["A", "B", "C", "D", "E"].includes(row.grade)).length;
+  const deCount = (state.gradeCounts.D || 0) + (state.gradeCounts.E || 0);
+  const deRatio = total ? Math.round((deCount / total) * 100) : 0;
 
   const summary = [
-    `${monthText} CII 분석 결과, CII 산출 대상 ${valid}척 중 D/E 등급 선박은 ${deCount}척(${deRatio}%)입니다.`,
-    `세부적으로 D등급은 ${dCount}척, E등급은 ${eCount}척으로 확인됩니다.`,
-    highRiskNames
-      ? `우선 관리 대상 선박은 ${highRiskNames} 등이며, 운항 거리, 평균 속력, 연료소모량 변동 원인 검토가 필요합니다.`
-      : `현재 High Risk로 분류된 선박은 없습니다.`,
+    `${monthText} CII 관리 대상 ${VESSEL_MASTER.length}척 중 EXPORT 매칭 선박은 ${state.reportRows.filter((row) => row.matched).length}척입니다.`,
+    `누적등급 기준 D/E 등급 선박은 ${deCount}척(${deRatio}%)이며, E등급 ${state.gradeCounts.E || 0}척, D등급 ${state.gradeCounts.D || 0}척입니다.`,
+    `등급표는 누적등급 → OWNER → 관리사 → 선박 순으로 정렬되며, 최근 12개월은 ${state.periods[0].key}부터 ${state.periods[state.periods.length - 1].key}까지 표시됩니다.`,
     `본 결과는 업로드된 EXPORT 파일(${state.workbookName}) 기준으로 자동 산출되었습니다.`,
   ].join("\n");
 
   document.getElementById("summaryText").value = summary;
 }
 
-function filterDEVessels(keyword) {
+function filterRows(keyword) {
   const value = String(keyword || "").trim().toLowerCase();
-  if (!value) return state.deVessels;
+  if (!value) return state.reportRows;
 
-  return state.deVessels.filter((v) => {
-    return (
-      String(v.name).toLowerCase().includes(value) ||
-      String(v.code).toLowerCase().includes(value)
-    );
-  });
+  return state.reportRows.filter((row) =>
+    String(row.owner).toLowerCase().includes(value) ||
+    String(row.manager).toLowerCase().includes(value) ||
+    String(row.code).toLowerCase().includes(value) ||
+    String(row.vessel).toLowerCase().includes(value)
+  );
 }
 
 function downloadReport() {
-  if (!state.vessels.length) {
+  if (!state.reportRows.length) {
     alert("먼저 EXPORT 파일을 분석해 주세요.");
     return;
   }
 
-  const reportMonth = document.getElementById("reportMonth").value || "monthly";
   const wb = XLSX.utils.book_new();
+  const reportMonth = document.getElementById("reportMonth").value || "monthly";
 
-  const summaryRows = buildSummarySheetRows();
-  const deRows = state.deVessels.map((v, idx) => ({
-    No: idx + 1,
-    Code: v.code,
-    Vessel: v.name,
-    Grade: v.grade,
-    "Rating(%)": v.rating,
-    FOC: v.foc,
-    Distance: v.distance,
-    "Avg Speed": v.avgSpeed,
-    "Attained CII": v.attainedCii,
-    "Required CII": v.requiredCii,
-    Risk: v.risk,
-  }));
+  const header = [
+    "누적등급",
+    "OWNER",
+    "관리사",
+    "선박",
+    ...state.periods.map((period) => `${period.year}년 ${period.month}월`),
+  ];
 
-  const monthlyRows = state.vessels
-    .filter((v) => v.grade)
-    .map((v) => ({
-      Code: v.code,
-      Vessel: v.name,
-      "Current Grade": v.grade,
-      "1월": v.monthly["1"],
-      "2월": v.monthly["2"],
-      "3월": v.monthly["3"],
-      "4월": v.monthly["4"],
-      "5월": v.monthly["5"],
-      "6월": v.monthly["6"],
-      "7월": v.monthly["7"],
-      "8월": v.monthly["8"],
-      "9월": v.monthly["9"],
-      "10월": v.monthly["10"],
-      "11월": v.monthly["11"],
-      "12월": v.monthly["12"],
-    }));
+  const rows = state.reportRows.map((row) => [
+    ["A", "B", "C", "D", "E"].includes(row.grade) ? `${row.grade}등급` : "미산출",
+    row.owner,
+    row.manager,
+    row.code,
+    ...state.periods.map((period) => row.monthly[period.key] || ""),
+  ]);
 
-  const rawRows = state.vessels.map((v) => ({
-    Code: v.code,
-    Vessel: v.name,
-    Type: v.type,
-    DWT: v.dwt,
-    Hours: v.hours,
-    FOC: v.foc,
-    Distance: v.distance,
-    "Avg Speed": v.avgSpeed,
-    Grade: v.grade,
-    "Rating(%)": v.rating,
-    "Attained CII": v.attainedCii,
-    "Required CII": v.requiredCii,
-  }));
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  XLSX.utils.book_append_sheet(wb, ws, "CII_Grade_Sheet");
 
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), "01_Dashboard");
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(deRows), "02_DE_Vessels");
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyRows), "03_Monthly_Grade");
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rawRows), "04_Raw_Data");
-
-  XLSX.writeFile(wb, `${reportMonth}_CII_Report.xlsx`);
-}
-
-function buildSummarySheetRows() {
-  const valid = state.vessels.filter((v) => v.grade).length;
-  const deCount = state.deVessels.length;
-
-  return [
-    ["CII Monthly Report"],
-    [],
+  const summaryRows = [
+    ["CII Monthly Summary"],
     ["Source File", state.workbookName],
-    ["Total Vessels", state.vessels.length],
-    ["CII Valid Vessels", valid],
-    ["D/E Vessels", deCount],
-    ["E Grade Vessels", state.gradeCounts.E || 0],
-    [],
-    ["Grade", "Count"],
+    ["Report Month", reportMonth],
+    ["Target Vessels", VESSEL_MASTER.length],
+    ["Matched Vessels", state.reportRows.filter((row) => row.matched).length],
     ["A", state.gradeCounts.A || 0],
     ["B", state.gradeCounts.B || 0],
     ["C", state.gradeCounts.C || 0],
     ["D", state.gradeCounts.D || 0],
     ["E", state.gradeCounts.E || 0],
+    ["미산출", state.gradeCounts.X || 0],
     [],
     ["Auto Summary"],
     [document.getElementById("summaryText").value],
   ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), "Summary");
+
+  XLSX.writeFile(wb, `${reportMonth}_CII_Grade_Sheet.xlsx`);
 }
 
 async function copySummary() {
@@ -490,6 +1779,22 @@ async function copySummary() {
   } catch {
     alert("브라우저 권한 문제로 복사하지 못했습니다. 텍스트를 직접 선택해 복사해 주세요.");
   }
+}
+
+function cleanGrade(value) {
+  const grade = String(value || "").trim().toUpperCase();
+  return ["A", "B", "C", "D", "E"].includes(grade) ? grade : "";
+}
+
+function getCell(row, idx) {
+  if (idx === undefined || idx === null) return "";
+  return row[idx] ?? "";
+}
+
+function toNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const num = Number(String(value).replace(/,/g, "").replace("%", ""));
+  return Number.isFinite(num) ? num : null;
 }
 
 function escapeHtml(value) {
