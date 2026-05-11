@@ -1550,8 +1550,7 @@ function renderGradeChart() {
   if (!container) return;
 
   container.classList.remove("empty");
-  container.classList.add("pie-chart-box");
-  container.innerHTML = buildGradePieHtml();
+  container.innerHTML = buildGradePieSvg();
 }
 
 function buildGradePieSvg() {
@@ -1562,6 +1561,14 @@ function buildGradePieSvg() {
     C: "#fff49a",
     B: "#bdd7ee",
     A: "#00b050",
+  };
+
+  const textColors = {
+    E: "#ffffff",
+    D: "#000000",
+    C: "#000000",
+    B: "#000000",
+    A: "#000000",
   };
 
   const total = grades.reduce((sum, grade) => sum + (state.gradeCounts[grade] || 0), 0);
@@ -1586,7 +1593,7 @@ function buildGradePieSvg() {
     const angle = (count / total) * 360;
     const endAngle = startAngle + angle;
 
-    // 조각
+    // 원 조각
     slices.push(`
       <path d="${describeArc(cx, cy, r, startAngle, endAngle)}"
             fill="${colors[grade]}"
@@ -1594,13 +1601,15 @@ function buildGradePieSvg() {
             stroke-width="2"></path>
     `);
 
-    // 라벨 위치 (조각 안쪽)
+    // 조각 안 텍스트 위치
     const midAngle = startAngle + angle / 2;
-    const labelRadius = angle < 40 ? r * 0.68 : r * 0.60;
+    const labelRadius = angle < 45 ? r * 0.70 : r * 0.58;
     const labelPos = polarToCartesian(cx, cy, labelRadius, midAngle);
 
     labels.push(`
-      <text x="${labelPos.x}" y="${labelPos.y}" class="pie-label">
+      <text x="${labelPos.x}" y="${labelPos.y}"
+            class="pie-label"
+            fill="${textColors[grade]}">
         <tspan x="${labelPos.x}" dy="-1.2em">${grade}등급</tspan>
         <tspan x="${labelPos.x}" dy="1.5em">${count}척</tspan>
         <tspan x="${labelPos.x}" dy="1.5em">${pct}%</tspan>
@@ -1610,6 +1619,7 @@ function buildGradePieSvg() {
     startAngle = endAngle;
   });
 
+  // 하단 범례
   const legend = grades.map((grade, idx) => {
     const x = 205 + idx * 24;
     return `
@@ -2404,5 +2414,5 @@ function renderDEManagePie() {
   if (!container) return;
 
   container.classList.remove("empty");
-  container.innerHTML = buildGradePieHtml();
+  container.innerHTML = buildGradePieSvg();
 }

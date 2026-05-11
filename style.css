@@ -492,3 +492,19 @@ th {
     margin: 0 auto;
   }
 }
+
+.pie-label {
+  font-size: 13px;
+  font-weight: 900;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.pie-label tspan {
+  text-anchor: middle;
+}
+
+.pie-legend {
+  font-size: 9px;
+  fill: #111827;
+}
