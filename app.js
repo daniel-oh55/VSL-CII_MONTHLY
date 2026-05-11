@@ -1351,6 +1351,7 @@ async function handleAnalyze() {
     renderDashboard();
     renderGradeChart();
     renderGradeSheet(state.reportRows);
+    renderDEManagement();
     renderSummary();
 
     fileStatus.textContent = `등급표 생성 완료: ${file.name}`;
@@ -1544,26 +1545,100 @@ function renderDashboard() {
 
 function renderGradeChart() {
   const container = document.getElementById("gradeChart");
-  const grades = ["E", "D", "C", "B", "A"];
-  const total = state.reportRows.filter((row) => ["A", "B", "C", "D", "E"].includes(row.grade)).length || 1;
-  const max = Math.max(...grades.map((grade) => state.gradeCounts[grade] || 0), 1);
+  if (!container) return;
 
   container.classList.remove("empty");
-  container.innerHTML = grades.map((grade) => {
-    const count = state.gradeCounts[grade] || 0;
-    const pct = Math.round((count / total) * 100);
-    const width = Math.max((count / max) * 100, count > 0 ? 5 : 0);
+  container.innerHTML = buildGradePieSvg();
+}
 
+function buildGradePieSvg() {
+  const grades = ["E", "D", "C", "B", "A"];
+  const colors = {
+    E: "#f8505b",
+    D: "#ffc7ce",
+    C: "#fff49a",
+    B: "#bdd7ee",
+    A: "#00b050",
+  };
+
+  const total = grades.reduce((sum, grade) => sum + (state.gradeCounts[grade] || 0), 0);
+
+  if (!total) {
+    return `<div class="empty">표시할 등급 데이터가 없습니다.</div>`;
+  }
+
+  const cx = 250;
+  const cy = 235;
+  const r = 185;
+
+  let startAngle = -90;
+  const slices = [];
+  const labels = [];
+
+  grades.forEach((grade) => {
+    const count = state.gradeCounts[grade] || 0;
+    if (!count) return;
+
+    const pct = Math.round((count / total) * 100);
+    const angle = (count / total) * 360;
+    const endAngle = startAngle + angle;
+
+    slices.push(`
+      <path d="${describeArc(cx, cy, r, startAngle, endAngle)}"
+            fill="${colors[grade]}"
+            stroke="#ffffff"
+            stroke-width="2"></path>
+    `);
+
+    const midAngle = startAngle + angle / 2;
+    const labelPos = polarToCartesian(cx, cy, r * 0.62, midAngle);
+
+    labels.push(`
+      <text x="${labelPos.x}" y="${labelPos.y - 18}" class="pie-label">${grade}등급</text>
+      <text x="${labelPos.x}" y="${labelPos.y + 10}" class="pie-label">${count}척</text>
+      <text x="${labelPos.x}" y="${labelPos.y + 38}" class="pie-label">${pct}%</text>
+    `);
+
+    startAngle = endAngle;
+  });
+
+  const legend = grades.map((grade, idx) => {
+    const x = 210 + idx * 24;
     return `
-      <div class="grade-row">
-        <div class="grade-label"><span class="chip grade-${grade}">${grade}등급</span></div>
-        <div class="grade-track">
-          <div class="grade-bar grade-${grade}" style="width:${width}%"></div>
-        </div>
-        <div class="grade-count">${count}척 / ${pct}%</div>
-      </div>
+      <rect x="${x}" y="485" width="6" height="6" fill="${colors[grade]}"></rect>
+      <text x="${x + 9}" y="491" class="pie-legend">${grade}</text>
     `;
   }).join("");
+
+  return `
+    <svg viewBox="0 0 500 510" role="img" aria-label="CII grade pie chart">
+      ${slices.join("")}
+      ${labels.join("")}
+      ${legend}
+    </svg>
+  `;
+}
+
+function polarToCartesian(cx, cy, r, angleInDegrees) {
+  const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+
+  return {
+    x: cx + (r * Math.cos(angleInRadians)),
+    y: cy + (r * Math.sin(angleInRadians)),
+  };
+}
+
+function describeArc(cx, cy, r, startAngle, endAngle) {
+  const start = polarToCartesian(cx, cy, r, endAngle);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+  return [
+    "M", cx, cy,
+    "L", start.x, start.y,
+    "A", r, r, 0, largeArcFlag, 0, end.x, end.y,
+    "Z"
+  ].join(" ");
 }
 
 function renderGradeSheet(rows) {
@@ -1802,15 +1877,20 @@ function buildStyledCiiGradeSheet() {
 
   const displayRows = getCiiDisplayRowsForExcel();
 
-  displayRows.forEach((v) => {
-    rows.push([
-      `${v.grade}등급`,
-      v.owner || "",
-      v.manager || "",
-      v.code || "",
-      ...state.periods.map((p) => v.monthly?.[p.key] || "")
-    ]);
-  });
+  const totalValid = displayRows.filter((v) => ["A", "B", "C", "D", "E"].includes(v.grade)).length || 1;
+
+displayRows.forEach((v) => {
+  const gradeCount = state.gradeCounts[v.grade] || 0;
+  const gradePct = Math.round((gradeCount / totalValid) * 100);
+
+  rows.push([
+    `${v.grade}등급\n${gradeCount}척\n${gradePct}%`,
+    v.owner || "",
+    v.manager || "",
+    v.code || "",
+    ...state.periods.map((p) => v.monthly?.[p.key] || "")
+  ]);
+});
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
@@ -1863,9 +1943,12 @@ function applyCiiSheetStyle(ws, rows, recentMonths) {
   for (let r = range.s.r; r <= range.e.r; r += 1) {
     for (let c = range.s.c; c <= range.e.c; c += 1) {
       const cellRef = XLSX.utils.encode_cell({ r, c });
-      if (!ws[cellRef]) continue;
 
-      const value = ws[cellRef].v;
+if (!ws[cellRef]) {
+  ws[cellRef] = { t: "s", v: "" };
+}
+
+const value = ws[cellRef].v;
 
       ws[cellRef].s = {
         font: {
@@ -1917,6 +2000,91 @@ function applyCiiSheetStyle(ws, rows, recentMonths) {
 }
     }
   }
+
+  applyExcelStrongBorders(ws, rows, state.periods);
+}
+
+function applyExcelStrongBorders(ws, rows, periods) {
+  if (!ws["!ref"]) return;
+
+  const range = XLSX.utils.decode_range(ws["!ref"]);
+  const firstRow = range.s.r;
+  const lastRow = range.e.r;
+  const firstCol = range.s.c;
+  const lastCol = range.e.c;
+
+  const thick = { style: "medium", color: { rgb: "000000" } };
+  const thin = { style: "thin", color: { rgb: "666666" } };
+
+  const yearChangeCols = [];
+
+  periods.forEach((period, idx) => {
+    if (idx === 0) return;
+    if (period.year !== periods[idx - 1].year) {
+      yearChangeCols.push(4 + idx);
+    }
+  });
+
+  const gradeBoundaryRows = getExcelGradeBoundaryRows();
+
+  for (let r = firstRow; r <= lastRow; r += 1) {
+    for (let c = firstCol; c <= lastCol; c += 1) {
+      const cellRef = XLSX.utils.encode_cell({ r, c });
+
+      if (!ws[cellRef]) {
+        ws[cellRef] = { t: "s", v: "" };
+      }
+
+      const border = {
+        top: ws[cellRef].s?.border?.top || thin,
+        bottom: ws[cellRef].s?.border?.bottom || thin,
+        left: ws[cellRef].s?.border?.left || thin,
+        right: ws[cellRef].s?.border?.right || thin,
+      };
+
+      // 1) 전체 테두리 굵은 선
+      if (r === firstRow) border.top = thick;
+      if (r === lastRow) border.bottom = thick;
+      if (c === firstCol) border.left = thick;
+      if (c === lastCol) border.right = thick;
+
+      // 2) 제목 TAB과 E등급 행 사이 굵은 선
+      if (r === 1) border.bottom = thick;
+
+      // 3) 각 등급 그룹 사이 가로 굵은 선
+      if (gradeBoundaryRows.includes(r)) {
+        border.top = thick;
+      }
+
+      // 4) 선박 열과 월별 등급 첫열 사이 세로 굵은 선
+      if (c === 3) border.right = thick;
+
+      // 5) 연도 변경 지점 세로 굵은 선
+      // 예: 2025년 12월과 2026년 1월 사이
+      if (yearChangeCols.includes(c)) {
+        border.left = thick;
+      }
+
+      ws[cellRef].s = {
+        ...(ws[cellRef].s || {}),
+        border,
+      };
+    }
+  }
+}
+
+function getExcelGradeBoundaryRows() {
+  const displayRows = getCiiDisplayRowsForExcel();
+  const boundaries = [];
+
+  for (let i = 1; i < displayRows.length; i += 1) {
+    if (displayRows[i].grade !== displayRows[i - 1].grade) {
+      // 엑셀상 실제 데이터 시작 행은 3행이므로 index + 2
+      boundaries.push(i + 2);
+    }
+  }
+
+  return boundaries;
 }
 
 function applyGradeCellStyle(cell, grade) {
@@ -2084,4 +2252,89 @@ function applyBasicSheetStyle(ws) {
       }
     }
   }
+}
+
+function renderDEManagement() {
+  renderDEManageTable();
+  renderDEManagePie();
+}
+
+function renderDEManageTable() {
+  const thead = document.getElementById("deManageHead");
+  const tbody = document.getElementById("deManageBody");
+
+  if (!thead || !tbody) return;
+
+  const deRows = state.reportRows.filter((row) => ["D", "E"].includes(row.grade));
+
+  const yearGroups = [];
+
+  state.periods.forEach((period) => {
+    const last = yearGroups[yearGroups.length - 1];
+    if (last && last.year === period.year) {
+      last.count += 1;
+    } else {
+      yearGroups.push({ year: period.year, count: 1 });
+    }
+  });
+
+  thead.innerHTML = `
+    <tr>
+      <th rowspan="2" class="static-head">누적등급<br>(${String(state.periods[state.periods.length - 1].year).slice(2)}년)</th>
+      <th rowspan="2" class="static-head">OWNER</th>
+      <th rowspan="2" class="static-head">관리사</th>
+      <th rowspan="2" class="static-head">선박</th>
+      ${yearGroups.map((g) => `<th colspan="${g.count}" class="year-head">${g.year}년</th>`).join("")}
+    </tr>
+    <tr>
+      ${state.periods.map((p) => `<th class="month-head">${p.month}월</th>`).join("")}
+    </tr>
+  `;
+
+  if (!deRows.length) {
+    tbody.innerHTML = `<tr><td colspan="${4 + state.periods.length}" class="empty-cell">D/E 등급 선박이 없습니다.</td></tr>`;
+    return;
+  }
+
+  const rowSpans = calculateRowSpans(deRows);
+  const totalValid = state.reportRows.filter((row) => ["A", "B", "C", "D", "E"].includes(row.grade)).length || 1;
+
+  tbody.innerHTML = deRows.map((row, idx) => {
+    const cells = [];
+
+    if (rowSpans.grade[idx]) {
+      const count = state.gradeCounts[row.grade] || 0;
+      const pct = Math.round((count / totalValid) * 100);
+      cells.push(`
+        <td rowspan="${rowSpans.grade[idx]}" class="group-cell group-${row.grade}">
+          ${row.grade}등급<br>${count}척<br>${pct}%
+        </td>
+      `);
+    }
+
+    if (rowSpans.owner[idx]) {
+      cells.push(`<td rowspan="${rowSpans.owner[idx]}" class="owner-cell">${escapeHtml(row.owner)}</td>`);
+    }
+
+    if (rowSpans.manager[idx]) {
+      cells.push(`<td rowspan="${rowSpans.manager[idx]}" class="manager-cell">${escapeHtml(row.manager)}</td>`);
+    }
+
+    cells.push(`<td class="vessel-cell">${escapeHtml(row.code)}</td>`);
+
+    state.periods.forEach((period) => {
+      const grade = row.monthly[period.key] || "";
+      cells.push(`<td class="month-cell grade-${grade || "blank"}">${grade || ""}</td>`);
+    });
+
+    return `<tr>${cells.join("")}</tr>`;
+  }).join("");
+}
+
+function renderDEManagePie() {
+  const container = document.getElementById("gradePieChart");
+  if (!container) return;
+
+  container.classList.remove("empty");
+  container.innerHTML = buildGradePieSvg();
 }

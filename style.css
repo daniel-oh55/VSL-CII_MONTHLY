@@ -335,3 +335,91 @@ th {
   .table-actions input { width: 100%; }
 }
 
+.de-layout {
+  display: grid;
+  grid-template-columns: 1.35fr 0.9fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.section-title {
+  margin: 0 0 8px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.pie-panel {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pie-chart {
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+  background: #ffffff;
+  border-radius: 10px;
+  color: #06111f;
+  overflow: hidden;
+}
+
+.pie-chart svg {
+  width: 100%;
+  max-width: 460px;
+  height: auto;
+}
+
+.pie-label {
+  font-size: 13px;
+  font-weight: 900;
+  fill: #000000;
+  text-anchor: middle;
+}
+
+.pie-legend {
+  font-size: 9px;
+  fill: #111827;
+}
+
+.improvement-box {
+  margin-top: 18px;
+}
+
+.improvement-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  background: #ffffff;
+  color: #06111f;
+}
+
+.improvement-table th,
+.improvement-table td {
+  border: 1px solid #111827;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.improvement-table th {
+  width: 140px;
+  background: #f8fafc;
+  font-weight: 900;
+}
+
+.improvement-table td {
+  text-align: center;
+}
+
+.de-table {
+  min-width: 820px;
+}
+
+@media (max-width: 1200px) {
+  .de-layout {
+    grid-template-columns: 1fr;
+  }
+}

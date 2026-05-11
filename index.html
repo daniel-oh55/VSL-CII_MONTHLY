@@ -19,10 +19,11 @@
       </div>
 
       <nav class="nav">
-        <a href="#upload" class="active">01 Upload</a>
-        <a href="#dashboard">02 Summary</a>
-        <a href="#grade-sheet">03 Grade Sheet</a>
-      </nav>
+  <a href="#upload" class="active">01 Upload</a>
+  <a href="#dashboard">02 Summary</a>
+  <a href="#grade-sheet">03 Grade Sheet</a>
+  <a href="#de-management">04 D/E Management</a>
+</nav>
 
       <div class="side-note">
         <strong>조회 대상</strong>
@@ -136,6 +137,64 @@
           </table>
         </div>
       </section>
+
+<section class="panel" id="de-management">
+  <div class="panel-header">
+    <div>
+      <h3>CII D/E 등급 선박 분석 및 개선방향 검토</h3>
+      <p>D/E 등급 선박 리스트와 개선방향 검토 내용을 한 화면에서 확인합니다.</p>
+    </div>
+  </div>
+
+  <div class="de-layout">
+    <div>
+      <h4 class="section-title">■ CII D/E 등급 선박 리스트</h4>
+      <div class="table-wrap">
+        <table class="grade-sheet-table de-table">
+          <thead id="deManageHead"></thead>
+          <tbody id="deManageBody">
+            <tr><td class="empty-cell">분석 결과가 없습니다.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="pie-panel">
+      <h4 class="section-title">■ 누적 등급 분포</h4>
+      <div id="gradePieChart" class="pie-chart empty">분석 결과가 여기에 표시됩니다.</div>
+    </div>
+  </div>
+
+  <div class="improvement-box">
+    <h4 class="section-title">■ 개선방향</h4>
+    <table class="improvement-table">
+      <tbody>
+        <tr>
+          <th>CPP/가변피치<br>탑재선박</th>
+          <td>
+            CPP(가변피치프로펠러)의 경우 RPM 고정 운항 및 운항변경을 통한 등급 향상은 어려움<br>
+            SSM에서 RPM 변경을 통한 선속조절을 가능하도록 개조하여 성능 향상시키는 것 연구 중
+          </td>
+        </tr>
+        <tr>
+          <th>실리콘<br>페인팅</th>
+          <td>
+            입거 시 최고사양 실리콘 페인트 도포 & 선체 저항 감소<br>
+            => 약 2% 소모량 효율성 개선 기대
+          </td>
+        </tr>
+        <tr>
+          <th>바이오 연료</th>
+          <td>
+            SSM과 운항팀 벙커파트간 바이오 연료 사용에 관하여 연구중<br>
+            => CO2 배출량 절감 기대
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
     </main>
   </div>
 
