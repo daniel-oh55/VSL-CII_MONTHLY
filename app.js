@@ -1718,7 +1718,7 @@ function filterRows(keyword) {
 }
 
 function downloadReport() {
-  if (!state.vessels.length) {
+  if (!state.reportRows || !state.reportRows.length) {
     alert("먼저 EXPORT 파일을 분석해 주세요.");
     return;
   }
@@ -1726,26 +1726,26 @@ function downloadReport() {
   const reportMonth = document.getElementById("reportMonth").value || "monthly";
   const wb = XLSX.utils.book_new();
 
-  // 화면에 표시되는 최근 12개월 테이블과 유사한 서식 시트 생성
-  const styledSheet = buildStyledCiiGradeSheet();
-  XLSX.utils.book_append_sheet(wb, styledSheet, "CII등급");
+  // 1) 화면의 월별 CII 등급표와 동일한 형식의 시트
+  const gradeSheet = buildStyledCiiGradeSheet();
+  XLSX.utils.book_append_sheet(wb, gradeSheet, "CII등급");
 
-  // D/E 선박 리스트 시트
-  const deRows = state.deVessels.map((v, idx) => ({
-    No: idx + 1,
-    누적등급: `${v.grade}등급`,
-    OWNER: v.owner || "",
-    관리사: v.manager || "",
-    선박: v.code || v.name || "",
-    Grade: v.grade,
-    "Rating(%)": v.rating,
-    FOC: v.foc,
-    Distance: v.distance,
-    "Avg Speed": v.avgSpeed,
-    "Attained CII": v.attainedCii,
-    "Required CII": v.requiredCii,
-    Risk: v.risk,
-  }));
+  // 2) D/E 등급 선박만 별도 시트
+  const deRows = state.reportRows
+    .filter((v) => ["D", "E"].includes(v.grade))
+    .map((v, idx) => ({
+      No: idx + 1,
+      누적등급: `${v.grade}등급`,
+      OWNER: v.owner || "",
+      관리사: v.manager || "",
+      선박: v.code || "",
+      VesselName: v.vessel || "",
+      Grade: v.grade || "",
+      "Rating(%)": v.rating ?? "",
+      "Attained CII": v.attainedCii ?? "",
+      "Required CII": v.requiredCii ?? "",
+      EXPORT매칭: v.matched ? "Y" : "N",
+    }));
 
   const deSheet = XLSX.utils.json_to_sheet(deRows);
   applyBasicSheetStyle(deSheet);
@@ -1780,18 +1780,15 @@ function escapeHtml(value) {
 }
 
 function buildStyledCiiGradeSheet() {
-  const reportMonth = document.getElementById("reportMonth").value || "2026-03";
-  const recentMonths = getRecent12Months(reportMonth);
-
   const rows = [];
 
   // 1행: 연도 병합용 헤더
   rows.push([
-    "누적등급\n(26년)",
+    `누적등급\n(${String(state.periods[state.periods.length - 1].year).slice(2)}년)`,
     "OWNER",
     "관리사",
     "선박",
-    ...recentMonths.map((m) => `${m.year}년`)
+    ...state.periods.map((p) => `${p.year}년`)
   ]);
 
   // 2행: 월 헤더
@@ -1800,52 +1797,33 @@ function buildStyledCiiGradeSheet() {
     "",
     "",
     "",
-    ...recentMonths.map((m) => `${m.month}월`)
+    ...state.periods.map((p) => `${p.month}월`)
   ]);
 
   const displayRows = getCiiDisplayRowsForExcel();
 
   displayRows.forEach((v) => {
     rows.push([
-      v.cumulativeGrade || `${v.grade}등급`,
+      `${v.grade}등급`,
       v.owner || "",
       v.manager || "",
-      v.code || v.name || "",
-      ...recentMonths.map((m) => {
-        const key = String(m.month);
-        return v.monthly?.[key] || "";
-      })
+      v.code || "",
+      ...state.periods.map((p) => v.monthly?.[p.key] || "")
     ]);
   });
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
-  applyCiiSheetStyle(ws, rows, recentMonths);
-  applyCiiMerges(ws, rows, displayRows, recentMonths);
+  applyCiiSheetStyle(ws, rows, state.periods);
+  applyCiiMerges(ws, rows, displayRows, state.periods);
 
   return ws;
 }
 
 function getCiiDisplayRowsForExcel() {
-  // 화면에 표시 중인 선박 리스트와 동일한 기준으로 정렬합니다.
-  // v2에서 별도 filtered/display 배열을 쓰고 있다면 이 부분만 해당 배열명으로 바꾸면 됩니다.
-  return [...state.vessels]
-    .filter((v) => v.grade)
-    .sort((a, b) => {
-      const gradeOrder = { E: 1, D: 2, C: 3, B: 4, A: 5 };
-
-      const gradeCompare =
-        (gradeOrder[a.grade] || 99) - (gradeOrder[b.grade] || 99);
-      if (gradeCompare !== 0) return gradeCompare;
-
-      const ownerCompare = compareText(a.owner || "", b.owner || "");
-      if (ownerCompare !== 0) return ownerCompare;
-
-      const managerCompare = compareText(a.manager || "", b.manager || "");
-      if (managerCompare !== 0) return managerCompare;
-
-      return compareText(a.code || a.name || "", b.code || b.name || "");
-    });
+  return [...state.reportRows]
+    .filter((v) => ["A", "B", "C", "D", "E"].includes(v.grade))
+    .sort(compareReportRows);
 }
 
 function compareText(a, b) {
@@ -1934,9 +1912,9 @@ function applyCiiSheetStyle(ws, rows, recentMonths) {
 
       // 누적등급 컬럼 색상
       if (r >= 2 && c === 0) {
-        const grade = String(value || "").charAt(0);
-        applyCumulativeGradeStyle(ws[cellRef], grade);
-      }
+  const grade = String(value || "").trim().charAt(0);
+  applyCumulativeGradeStyle(ws[cellRef], grade);
+}
     }
   }
 }
@@ -2030,9 +2008,9 @@ function applyCiiMerges(ws, rows, displayRows, recentMonths) {
   }
 
   // 누적등급 / OWNER / 관리사 병합
-  addVerticalMerges(merges, displayRows, 0, "cumulativeGrade");
-  addVerticalMerges(merges, displayRows, 1, "owner");
-  addVerticalMerges(merges, displayRows, 2, "manager");
+addVerticalMerges(merges, displayRows, 0, "grade");
+addVerticalMerges(merges, displayRows, 1, "owner");
+addVerticalMerges(merges, displayRows, 2, "manager");
 
   ws["!merges"] = merges;
 }
@@ -2061,8 +2039,8 @@ function addVerticalMerges(merges, rows, colIndex, key) {
 function getMergeValue(row, key) {
   if (!row) return "";
 
-  if (key === "cumulativeGrade") {
-    return row.cumulativeGrade || `${row.grade}등급`;
+  if (key === "grade") {
+    return row.grade || "";
   }
 
   return row[key] || "";
