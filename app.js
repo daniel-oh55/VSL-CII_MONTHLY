@@ -1312,7 +1312,9 @@ fileInput.addEventListener("change", () => {
 analyzeBtn.addEventListener("click", handleAnalyze);
 searchInput.addEventListener("input", () => renderGradeSheet(filterRows(searchInput.value)));
 downloadBtn.addEventListener("click", downloadReport);
-copySummaryBtn.addEventListener("click", copySummary);
+if (copySummaryBtn) {
+  copySummaryBtn.addEventListener("click", copySummary);
+}
 
 async function handleAnalyze() {
   const file = fileInput.files?.[0];
@@ -1548,7 +1550,8 @@ function renderGradeChart() {
   if (!container) return;
 
   container.classList.remove("empty");
-  container.innerHTML = buildGradePieSvg();
+  container.classList.add("pie-chart-box");
+  container.innerHTML = buildGradePieHtml();
 }
 
 function buildGradePieSvg() {
@@ -1616,6 +1619,54 @@ function buildGradePieSvg() {
       ${labels.join("")}
       ${legend}
     </svg>
+  `;
+}
+
+function buildGradePieHtml() {
+  const grades = ["E", "D", "C", "B", "A"];
+  const colors = {
+    E: "#f8505b",
+    D: "#ffc7ce",
+    C: "#fff49a",
+    B: "#bdd7ee",
+    A: "#00b050",
+  };
+
+  const total = grades.reduce((sum, grade) => sum + (state.gradeCounts[grade] || 0), 0);
+
+  if (!total) {
+    return `<div class="empty">표시할 등급 데이터가 없습니다.</div>`;
+  }
+
+  let current = 0;
+  const segments = grades.map((grade) => {
+    const count = state.gradeCounts[grade] || 0;
+    const degree = total ? (count / total) * 360 : 0;
+    const start = current;
+    const end = current + degree;
+    current = end;
+    return `${colors[grade]} ${start}deg ${end}deg`;
+  }).join(", ");
+
+  const legend = grades.map((grade) => {
+    const count = state.gradeCounts[grade] || 0;
+    const pct = total ? Math.round((count / total) * 100) : 0;
+
+    return `
+      <div class="pie-info-row">
+        <span class="pie-dot" style="background:${colors[grade]}"></span>
+        <strong>${grade}등급</strong>
+        <span>${count}척</span>
+        <span>${pct}%</span>
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <div class="simple-pie-wrap">
+      <div class="simple-pie" style="background: conic-gradient(${segments});"></div>
+      <div class="pie-info">${legend}</div>
+    </div>
   `;
 }
 
@@ -2265,12 +2316,15 @@ function renderDEManageTable() {
 
   if (!thead || !tbody) return;
 
-  const deRows = state.reportRows.filter((row) => ["D", "E"].includes(row.grade));
+  const deRows = [...state.reportRows]
+    .filter((row) => ["D", "E"].includes(String(row.grade || "").trim().toUpperCase()))
+    .sort(compareReportRows);
 
   const yearGroups = [];
 
   state.periods.forEach((period) => {
     const last = yearGroups[yearGroups.length - 1];
+
     if (last && last.year === period.year) {
       last.count += 1;
     } else {
@@ -2292,12 +2346,20 @@ function renderDEManageTable() {
   `;
 
   if (!deRows.length) {
-    tbody.innerHTML = `<tr><td colspan="${4 + state.periods.length}" class="empty-cell">D/E 등급 선박이 없습니다.</td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="${4 + state.periods.length}" class="empty-cell">
+          D/E 등급 선박이 없습니다.
+        </td>
+      </tr>
+    `;
     return;
   }
 
   const rowSpans = calculateRowSpans(deRows);
-  const totalValid = state.reportRows.filter((row) => ["A", "B", "C", "D", "E"].includes(row.grade)).length || 1;
+  const totalValid = state.reportRows.filter((row) =>
+    ["A", "B", "C", "D", "E"].includes(row.grade)
+  ).length || 1;
 
   tbody.innerHTML = deRows.map((row, idx) => {
     const cells = [];
@@ -2305,6 +2367,7 @@ function renderDEManageTable() {
     if (rowSpans.grade[idx]) {
       const count = state.gradeCounts[row.grade] || 0;
       const pct = Math.round((count / totalValid) * 100);
+
       cells.push(`
         <td rowspan="${rowSpans.grade[idx]}" class="group-cell group-${row.grade}">
           ${row.grade}등급<br>${count}척<br>${pct}%
@@ -2323,7 +2386,7 @@ function renderDEManageTable() {
     cells.push(`<td class="vessel-cell">${escapeHtml(row.code)}</td>`);
 
     state.periods.forEach((period) => {
-      const grade = row.monthly[period.key] || "";
+      const grade = row.monthly?.[period.key] || "";
       cells.push(`<td class="month-cell grade-${grade || "blank"}">${grade || ""}</td>`);
     });
 
@@ -2336,5 +2399,5 @@ function renderDEManagePie() {
   if (!container) return;
 
   container.classList.remove("empty");
-  container.innerHTML = buildGradePieSvg();
+  container.innerHTML = buildGradePieHtml();
 }
