@@ -1586,6 +1586,7 @@ function buildGradePieSvg() {
     const angle = (count / total) * 360;
     const endAngle = startAngle + angle;
 
+    // 조각
     slices.push(`
       <path d="${describeArc(cx, cy, r, startAngle, endAngle)}"
             fill="${colors[grade]}"
@@ -1593,23 +1594,27 @@ function buildGradePieSvg() {
             stroke-width="2"></path>
     `);
 
+    // 라벨 위치 (조각 안쪽)
     const midAngle = startAngle + angle / 2;
-    const labelPos = polarToCartesian(cx, cy, r * 0.62, midAngle);
+    const labelRadius = angle < 40 ? r * 0.68 : r * 0.60;
+    const labelPos = polarToCartesian(cx, cy, labelRadius, midAngle);
 
     labels.push(`
-      <text x="${labelPos.x}" y="${labelPos.y - 18}" class="pie-label">${grade}등급</text>
-      <text x="${labelPos.x}" y="${labelPos.y + 10}" class="pie-label">${count}척</text>
-      <text x="${labelPos.x}" y="${labelPos.y + 38}" class="pie-label">${pct}%</text>
+      <text x="${labelPos.x}" y="${labelPos.y}" class="pie-label">
+        <tspan x="${labelPos.x}" dy="-1.2em">${grade}등급</tspan>
+        <tspan x="${labelPos.x}" dy="1.5em">${count}척</tspan>
+        <tspan x="${labelPos.x}" dy="1.5em">${pct}%</tspan>
+      </text>
     `);
 
     startAngle = endAngle;
   });
 
   const legend = grades.map((grade, idx) => {
-    const x = 210 + idx * 24;
+    const x = 205 + idx * 24;
     return `
       <rect x="${x}" y="485" width="6" height="6" fill="${colors[grade]}"></rect>
-      <text x="${x + 9}" y="491" class="pie-legend">${grade}</text>
+      <text x="${x + 10}" y="491" class="pie-legend">${grade}</text>
     `;
   }).join("");
 
