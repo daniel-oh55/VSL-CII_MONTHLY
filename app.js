@@ -1718,67 +1718,40 @@ function filterRows(keyword) {
 }
 
 function downloadReport() {
-  if (!state.reportRows.length) {
+  if (!state.vessels.length) {
     alert("먼저 EXPORT 파일을 분석해 주세요.");
     return;
   }
 
-  const wb = XLSX.utils.book_new();
   const reportMonth = document.getElementById("reportMonth").value || "monthly";
+  const wb = XLSX.utils.book_new();
 
-  const header = [
-    "누적등급",
-    "OWNER",
-    "관리사",
-    "선박",
-    ...state.periods.map((period) => `${period.year}년 ${period.month}월`),
-  ];
+  // 화면에 표시되는 최근 12개월 테이블과 유사한 서식 시트 생성
+  const styledSheet = buildStyledCiiGradeSheet();
+  XLSX.utils.book_append_sheet(wb, styledSheet, "CII등급");
 
-  const rows = state.reportRows.map((row) => [
-    ["A", "B", "C", "D", "E"].includes(row.grade) ? `${row.grade}등급` : "미산출",
-    row.owner,
-    row.manager,
-    row.code,
-    ...state.periods.map((period) => row.monthly[period.key] || ""),
-  ]);
+  // D/E 선박 리스트 시트
+  const deRows = state.deVessels.map((v, idx) => ({
+    No: idx + 1,
+    누적등급: `${v.grade}등급`,
+    OWNER: v.owner || "",
+    관리사: v.manager || "",
+    선박: v.code || v.name || "",
+    Grade: v.grade,
+    "Rating(%)": v.rating,
+    FOC: v.foc,
+    Distance: v.distance,
+    "Avg Speed": v.avgSpeed,
+    "Attained CII": v.attainedCii,
+    "Required CII": v.requiredCii,
+    Risk: v.risk,
+  }));
 
-  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-  XLSX.utils.book_append_sheet(wb, ws, "CII_Grade_Sheet");
+  const deSheet = XLSX.utils.json_to_sheet(deRows);
+  applyBasicSheetStyle(deSheet);
+  XLSX.utils.book_append_sheet(wb, deSheet, "D_E_Vessels");
 
-  const summaryRows = [
-    ["CII Monthly Summary"],
-    ["Source File", state.workbookName],
-    ["Report Month", reportMonth],
-    ["Target Vessels", VESSEL_MASTER.length],
-    ["Matched Vessels", state.reportRows.filter((row) => row.matched).length],
-    ["A", state.gradeCounts.A || 0],
-    ["B", state.gradeCounts.B || 0],
-    ["C", state.gradeCounts.C || 0],
-    ["D", state.gradeCounts.D || 0],
-    ["E", state.gradeCounts.E || 0],
-    ["미산출", state.gradeCounts.X || 0],
-    [],
-    ["Auto Summary"],
-    [document.getElementById("summaryText").value],
-  ];
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), "Summary");
-
-  XLSX.writeFile(wb, `${reportMonth}_CII_Grade_Sheet.xlsx`);
-}
-
-async function copySummary() {
-  const text = document.getElementById("summaryText").value;
-  if (!text) {
-    alert("복사할 요약문이 없습니다.");
-    return;
-  }
-
-  try {
-    await navigator.clipboard.writeText(text);
-    alert("보고용 요약문을 복사했습니다.");
-  } catch {
-    alert("브라우저 권한 문제로 복사하지 못했습니다. 텍스트를 직접 선택해 복사해 주세요.");
-  }
+  XLSX.writeFile(wb, `${reportMonth}_CII_Report.xlsx`);
 }
 
 function cleanGrade(value) {
@@ -1804,4 +1777,333 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function buildStyledCiiGradeSheet() {
+  const reportMonth = document.getElementById("reportMonth").value || "2026-03";
+  const recentMonths = getRecent12Months(reportMonth);
+
+  const rows = [];
+
+  // 1행: 연도 병합용 헤더
+  rows.push([
+    "누적등급\n(26년)",
+    "OWNER",
+    "관리사",
+    "선박",
+    ...recentMonths.map((m) => `${m.year}년`)
+  ]);
+
+  // 2행: 월 헤더
+  rows.push([
+    "",
+    "",
+    "",
+    "",
+    ...recentMonths.map((m) => `${m.month}월`)
+  ]);
+
+  const displayRows = getCiiDisplayRowsForExcel();
+
+  displayRows.forEach((v) => {
+    rows.push([
+      v.cumulativeGrade || `${v.grade}등급`,
+      v.owner || "",
+      v.manager || "",
+      v.code || v.name || "",
+      ...recentMonths.map((m) => {
+        const key = String(m.month);
+        return v.monthly?.[key] || "";
+      })
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  applyCiiSheetStyle(ws, rows, recentMonths);
+  applyCiiMerges(ws, rows, displayRows, recentMonths);
+
+  return ws;
+}
+
+function getCiiDisplayRowsForExcel() {
+  // 화면에 표시 중인 선박 리스트와 동일한 기준으로 정렬합니다.
+  // v2에서 별도 filtered/display 배열을 쓰고 있다면 이 부분만 해당 배열명으로 바꾸면 됩니다.
+  return [...state.vessels]
+    .filter((v) => v.grade)
+    .sort((a, b) => {
+      const gradeOrder = { E: 1, D: 2, C: 3, B: 4, A: 5 };
+
+      const gradeCompare =
+        (gradeOrder[a.grade] || 99) - (gradeOrder[b.grade] || 99);
+      if (gradeCompare !== 0) return gradeCompare;
+
+      const ownerCompare = compareText(a.owner || "", b.owner || "");
+      if (ownerCompare !== 0) return ownerCompare;
+
+      const managerCompare = compareText(a.manager || "", b.manager || "");
+      if (managerCompare !== 0) return managerCompare;
+
+      return compareText(a.code || a.name || "", b.code || b.name || "");
+    });
+}
+
+function compareText(a, b) {
+  return String(a).localeCompare(String(b), "en-US");
+}
+
+function getRecent12Months(reportMonth) {
+  const [year, month] = reportMonth.split("-").map(Number);
+  const result = [];
+
+  for (let i = 11; i >= 0; i -= 1) {
+    const date = new Date(year, month - 1 - i, 1);
+    result.push({
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+    });
+  }
+
+  return result;
+}
+
+function applyCiiSheetStyle(ws, rows, recentMonths) {
+  const range = XLSX.utils.decode_range(ws["!ref"]);
+
+  ws["!cols"] = [
+    { wch: 12 },
+    { wch: 14 },
+    { wch: 16 },
+    { wch: 12 },
+    ...recentMonths.map(() => ({ wch: 9 })),
+  ];
+
+  ws["!rows"] = rows.map((_, index) => ({
+    hpt: index < 2 ? 28 : 22,
+  }));
+
+  for (let r = range.s.r; r <= range.e.r; r += 1) {
+    for (let c = range.s.c; c <= range.e.c; c += 1) {
+      const cellRef = XLSX.utils.encode_cell({ r, c });
+      if (!ws[cellRef]) continue;
+
+      const value = ws[cellRef].v;
+
+      ws[cellRef].s = {
+        font: {
+          name: "맑은 고딕",
+          sz: 10,
+          bold: r < 2 || c < 4,
+          color: { rgb: "111827" },
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+          wrapText: true,
+        },
+        border: {
+          top: { style: "thin", color: { rgb: "666666" } },
+          bottom: { style: "thin", color: { rgb: "666666" } },
+          left: { style: "thin", color: { rgb: "666666" } },
+          right: { style: "thin", color: { rgb: "666666" } },
+        },
+      };
+
+      // 헤더
+      if (r < 2) {
+        ws[cellRef].s.fill = {
+          patternType: "solid",
+          fgColor: { rgb: "F3F4F6" },
+        };
+        ws[cellRef].s.font.bold = true;
+      }
+
+      // 왼쪽 고정 정보 영역
+      if (r >= 2 && c < 4) {
+        ws[cellRef].s.fill = {
+          patternType: "solid",
+          fgColor: { rgb: "F8FAFC" },
+        };
+        ws[cellRef].s.font.bold = true;
+      }
+
+      // 등급 셀 색상
+      if (r >= 2 && c >= 4) {
+        applyGradeCellStyle(ws[cellRef], value);
+      }
+
+      // 누적등급 컬럼 색상
+      if (r >= 2 && c === 0) {
+        const grade = String(value || "").charAt(0);
+        applyCumulativeGradeStyle(ws[cellRef], grade);
+      }
+    }
+  }
+}
+
+function applyGradeCellStyle(cell, grade) {
+  const colorMap = {
+    A: { bg: "00B050", font: "FFFFFF" },
+    B: { bg: "BDD7EE", font: "000000" },
+    C: { bg: "FFF59D", font: "000000" },
+    D: { bg: "F8C6CF", font: "000000" },
+    E: { bg: "F43F5E", font: "FFFFFF" },
+  };
+
+  const style = colorMap[String(grade || "").trim()];
+  if (!style) return;
+
+  cell.s.fill = {
+    patternType: "solid",
+    fgColor: { rgb: style.bg },
+  };
+
+  cell.s.font = {
+    ...cell.s.font,
+    bold: true,
+    color: { rgb: style.font },
+  };
+}
+
+function applyCumulativeGradeStyle(cell, grade) {
+  const colorMap = {
+    A: { bg: "00B050", font: "FFFFFF" },
+    B: { bg: "BDD7EE", font: "000000" },
+    C: { bg: "FFF59D", font: "000000" },
+    D: { bg: "F8C6CF", font: "000000" },
+    E: { bg: "F43F5E", font: "FFFFFF" },
+  };
+
+  const style = colorMap[String(grade || "").trim()];
+  if (!style) return;
+
+  cell.s.fill = {
+    patternType: "solid",
+    fgColor: { rgb: style.bg },
+  };
+
+  cell.s.font = {
+    ...cell.s.font,
+    bold: true,
+    color: { rgb: style.font },
+  };
+}
+
+function applyCiiMerges(ws, rows, displayRows, recentMonths) {
+  const merges = [];
+
+  // 연도 헤더 병합
+  const yearStartCol = 4;
+  let currentYear = null;
+  let startCol = yearStartCol;
+
+  recentMonths.forEach((m, idx) => {
+    const col = yearStartCol + idx;
+
+    if (currentYear === null) {
+      currentYear = m.year;
+      startCol = col;
+      return;
+    }
+
+    if (m.year !== currentYear) {
+      merges.push({
+        s: { r: 0, c: startCol },
+        e: { r: 0, c: col - 1 },
+      });
+      currentYear = m.year;
+      startCol = col;
+    }
+  });
+
+  merges.push({
+    s: { r: 0, c: startCol },
+    e: { r: 0, c: yearStartCol + recentMonths.length - 1 },
+  });
+
+  // 좌측 헤더 세로 병합
+  for (let c = 0; c < 4; c += 1) {
+    merges.push({
+      s: { r: 0, c },
+      e: { r: 1, c },
+    });
+  }
+
+  // 누적등급 / OWNER / 관리사 병합
+  addVerticalMerges(merges, displayRows, 0, "cumulativeGrade");
+  addVerticalMerges(merges, displayRows, 1, "owner");
+  addVerticalMerges(merges, displayRows, 2, "manager");
+
+  ws["!merges"] = merges;
+}
+
+function addVerticalMerges(merges, rows, colIndex, key) {
+  let start = 0;
+  let prev = getMergeValue(rows[0], key);
+
+  for (let i = 1; i <= rows.length; i += 1) {
+    const current = i < rows.length ? getMergeValue(rows[i], key) : null;
+
+    if (current !== prev) {
+      if (i - start > 1) {
+        merges.push({
+          s: { r: start + 2, c: colIndex },
+          e: { r: i + 1, c: colIndex },
+        });
+      }
+
+      start = i;
+      prev = current;
+    }
+  }
+}
+
+function getMergeValue(row, key) {
+  if (!row) return "";
+
+  if (key === "cumulativeGrade") {
+    return row.cumulativeGrade || `${row.grade}등급`;
+  }
+
+  return row[key] || "";
+}
+
+function applyBasicSheetStyle(ws) {
+  if (!ws["!ref"]) return;
+
+  const range = XLSX.utils.decode_range(ws["!ref"]);
+
+  ws["!cols"] = Array.from({ length: range.e.c + 1 }, () => ({ wch: 16 }));
+
+  for (let r = range.s.r; r <= range.e.r; r += 1) {
+    for (let c = range.s.c; c <= range.e.c; c += 1) {
+      const cellRef = XLSX.utils.encode_cell({ r, c });
+      if (!ws[cellRef]) continue;
+
+      ws[cellRef].s = {
+        font: {
+          name: "맑은 고딕",
+          sz: 10,
+          bold: r === 0,
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+        },
+        border: {
+          top: { style: "thin", color: { rgb: "D1D5DB" } },
+          bottom: { style: "thin", color: { rgb: "D1D5DB" } },
+          left: { style: "thin", color: { rgb: "D1D5DB" } },
+          right: { style: "thin", color: { rgb: "D1D5DB" } },
+        },
+      };
+
+      if (r === 0) {
+        ws[cellRef].s.fill = {
+          patternType: "solid",
+          fgColor: { rgb: "E5E7EB" },
+        };
+      }
+    }
+  }
 }
