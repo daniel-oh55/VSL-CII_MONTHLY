@@ -1295,6 +1295,23 @@ const state = {
 
 const gradeOrder = { E: 1, D: 2, C: 3, B: 4, A: 5, X: 6 };
 const monthLabels = Array.from({ length: 12 }, (_, i) => String(i + 1));
+const EMAIL_SETTINGS_KEY = "ciiEmailSettings";
+const DEFAULT_EMAIL_SETTINGS = {
+  subject: "[CII] {month} {vessel} CII 등급 확인 요청",
+  body: [
+    "안녕하세요.",
+    "",
+    "{month} 기준 {vessel} 선박의 CII 등급은 {grade}입니다.",
+    "Owner: {owner}",
+    "Manager: {manager}",
+    "",
+    "{summary}",
+    "",
+    "확인 부탁드립니다.",
+  ].join("\n"),
+  includeSummary: true,
+  recipientsByVessel: {},
+};
 
 const fileInput = document.getElementById("fileInput");
 const analyzeBtn = document.getElementById("analyzeBtn");
@@ -1303,6 +1320,17 @@ const validationResult = document.getElementById("validationResult");
 const searchInput = document.getElementById("searchInput");
 const downloadBtn = document.getElementById("downloadBtn");
 const copySummaryBtn = document.getElementById("copySummaryBtn");
+const emailVesselSelect = document.getElementById("emailVesselSelect");
+const emailSubjectInput = document.getElementById("emailSubjectInput");
+const emailBodyInput = document.getElementById("emailBodyInput");
+const includeSummaryCheckbox = document.getElementById("includeSummaryCheckbox");
+const recipientTextarea = document.getElementById("recipientTextarea");
+const recipientPreview = document.getElementById("recipientPreview");
+const saveEmailSettingsBtn = document.getElementById("saveEmailSettingsBtn");
+const resetEmailSettingsBtn = document.getElementById("resetEmailSettingsBtn");
+const openOutlookBtn = document.getElementById("openOutlookBtn");
+
+let emailSettings = loadEmailSettings();
 
 fileInput.addEventListener("change", () => {
   const file = fileInput.files?.[0];
@@ -1315,6 +1343,7 @@ downloadBtn.addEventListener("click", downloadReport);
 if (copySummaryBtn) {
   copySummaryBtn.addEventListener("click", copySummary);
 }
+initEmailCenter();
 
 async function handleAnalyze() {
   const file = fileInput.files?.[0];
@@ -1362,6 +1391,149 @@ async function handleAnalyze() {
     alert("파일 분석 중 오류가 발생했습니다. EXPORT 파일 양식이 맞는지 확인해 주세요.");
     fileStatus.textContent = "분석 실패";
   }
+}
+
+function initEmailCenter() {
+  if (!emailVesselSelect) return;
+
+  emailVesselSelect.innerHTML = VESSEL_MASTER
+    .map((vessel) => `<option value="${escapeHtml(vessel.code)}">${escapeHtml(vessel.code)} - ${escapeHtml(vessel.owner)} / ${escapeHtml(vessel.manager)}</option>`)
+    .join("");
+
+  emailSubjectInput.value = emailSettings.subject;
+  emailBodyInput.value = emailSettings.body;
+  includeSummaryCheckbox.checked = Boolean(emailSettings.includeSummary);
+
+  emailVesselSelect.addEventListener("change", renderEmailRecipientFields);
+  saveEmailSettingsBtn?.addEventListener("click", saveEmailSettingsFromForm);
+  resetEmailSettingsBtn?.addEventListener("click", resetEmailSettings);
+  openOutlookBtn?.addEventListener("click", openOutlookDraft);
+  recipientTextarea?.addEventListener("input", renderRecipientPreview);
+
+  renderEmailRecipientFields();
+}
+
+function loadEmailSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(EMAIL_SETTINGS_KEY) || "{}");
+    return {
+      ...DEFAULT_EMAIL_SETTINGS,
+      ...saved,
+      recipientsByVessel: {
+        ...DEFAULT_EMAIL_SETTINGS.recipientsByVessel,
+        ...(saved.recipientsByVessel || {}),
+      },
+    };
+  } catch (error) {
+    console.warn("Failed to load email settings.", error);
+    return { ...DEFAULT_EMAIL_SETTINGS, recipientsByVessel: {} };
+  }
+}
+
+function persistEmailSettings() {
+  localStorage.setItem(EMAIL_SETTINGS_KEY, JSON.stringify(emailSettings));
+}
+
+function getSelectedEmailVesselCode() {
+  return emailVesselSelect?.value || VESSEL_MASTER[0]?.code || "";
+}
+
+function renderEmailRecipientFields() {
+  if (!recipientTextarea) return;
+
+  const vesselCode = getSelectedEmailVesselCode();
+  recipientTextarea.value = (emailSettings.recipientsByVessel[vesselCode] || []).join("\n");
+  renderRecipientPreview();
+}
+
+function renderRecipientPreview() {
+  if (!recipientPreview) return;
+
+  const recipients = parseRecipients(recipientTextarea?.value || "");
+  recipientPreview.textContent = recipients.length ? recipients.join(", ") : "저장된 수신처가 없습니다.";
+}
+
+function saveEmailSettingsFromForm({ silent = false } = {}) {
+  const vesselCode = getSelectedEmailVesselCode();
+
+  emailSettings = {
+    ...emailSettings,
+    subject: emailSubjectInput.value.trim() || DEFAULT_EMAIL_SETTINGS.subject,
+    body: emailBodyInput.value.trim() || DEFAULT_EMAIL_SETTINGS.body,
+    includeSummary: includeSummaryCheckbox.checked,
+    recipientsByVessel: {
+      ...emailSettings.recipientsByVessel,
+      [vesselCode]: parseRecipients(recipientTextarea.value),
+    },
+  };
+
+  persistEmailSettings();
+  renderRecipientPreview();
+  if (!silent) {
+    alert("메일 설정과 수신처를 저장했습니다.");
+  }
+}
+
+function resetEmailSettings() {
+  const recipientsByVessel = emailSettings.recipientsByVessel || {};
+  emailSettings = {
+    ...DEFAULT_EMAIL_SETTINGS,
+    recipientsByVessel,
+  };
+
+  emailSubjectInput.value = emailSettings.subject;
+  emailBodyInput.value = emailSettings.body;
+  includeSummaryCheckbox.checked = emailSettings.includeSummary;
+  persistEmailSettings();
+  renderEmailRecipientFields();
+}
+
+function openOutlookDraft() {
+  saveEmailSettingsFromForm({ silent: true });
+
+  const vesselCode = getSelectedEmailVesselCode();
+  const recipients = emailSettings.recipientsByVessel[vesselCode] || [];
+
+  if (!recipients.length) {
+    alert("선택한 선박의 수신처를 먼저 입력해 주세요.");
+    return;
+  }
+
+  const vessel = getEmailVesselContext(vesselCode);
+  const subject = applyEmailTemplate(emailSettings.subject, vessel);
+  const body = applyEmailTemplate(emailSettings.body, vessel);
+  const mailto = `mailto:${recipients.map(encodeURIComponent).join(";")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+  window.location.href = mailto;
+}
+
+function getEmailVesselContext(vesselCode) {
+  const master = VESSEL_MASTER.find((item) => item.code === vesselCode) || {};
+  const reportRow = state.reportRows.find((row) => row.code === vesselCode) || {};
+  const reportMonth = document.getElementById("reportMonth")?.value || "";
+  const summary = emailSettings.includeSummary
+    ? (document.getElementById("summaryText")?.value || "")
+    : "";
+
+  return {
+    vessel: vesselCode,
+    owner: reportRow.owner || master.owner || "",
+    manager: reportRow.manager || master.manager || "",
+    grade: reportRow.grade || "-",
+    month: reportMonth || "-",
+    summary,
+  };
+}
+
+function applyEmailTemplate(template, context) {
+  return String(template || "").replace(/\{(vessel|owner|manager|grade|month|summary)\}/g, (_, key) => context[key] || "");
+}
+
+function parseRecipients(value) {
+  return String(value || "")
+    .split(/[\n,;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function parseExportRows(rows) {

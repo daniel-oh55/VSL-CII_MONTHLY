@@ -23,6 +23,7 @@
   <a href="#dashboard">02 Summary</a>
   <a href="#grade-sheet">03 Grade Sheet</a>
   <a href="#de-management">04 D/E Management</a>
+  <a href="#email-center">05 Email</a>
 </nav>
 
       <div class="side-note">
@@ -192,6 +193,57 @@
         </tr>
       </tbody>
     </table>
+  </div>
+</section>
+
+<section class="panel" id="email-center">
+  <div class="panel-header">
+    <div>
+      <h3>Outlook Email Center</h3>
+      <p>선박별 수신처와 메일 내용을 저장한 뒤 Outlook 메일 작성창을 엽니다.</p>
+    </div>
+    <button id="openOutlookBtn" type="button" class="secondary-btn">Outlook 메일 작성</button>
+  </div>
+
+  <div class="email-layout">
+    <div class="email-card">
+      <h4 class="section-title">메일 내용 설정</h4>
+      <label for="emailVesselSelect">선박</label>
+      <select id="emailVesselSelect"></select>
+
+      <label for="emailSubjectInput">제목 템플릿</label>
+      <input id="emailSubjectInput" type="text" />
+
+      <label for="emailBodyInput">본문 템플릿</label>
+      <textarea id="emailBodyInput"></textarea>
+
+      <label class="checkbox-row">
+        <input id="includeSummaryCheckbox" type="checkbox" />
+        <span>현재 분석 요약을 본문에 포함</span>
+      </label>
+
+      <div class="email-actions">
+        <button id="saveEmailSettingsBtn" type="button" class="secondary-btn">설정 저장</button>
+        <button id="resetEmailSettingsBtn" type="button" class="ghost-btn">기본값 복원</button>
+      </div>
+    </div>
+
+    <div class="email-card">
+      <h4 class="section-title">수신처 리스트 관리</h4>
+      <label for="recipientTextarea">수신처</label>
+      <textarea id="recipientTextarea" placeholder="email@example.com&#10;cc@example.com"></textarea>
+      <p class="field-help">쉼표, 세미콜론, 줄바꿈으로 여러 수신처를 입력할 수 있습니다.</p>
+
+      <div class="recipient-preview">
+        <strong>선택 선박 수신처</strong>
+        <div id="recipientPreview">저장된 수신처가 없습니다.</div>
+      </div>
+
+      <div class="token-help">
+        <strong>사용 가능한 치환값</strong>
+        <span>{vessel}, {owner}, {manager}, {grade}, {month}, {summary}</span>
+      </div>
+    </div>
   </div>
 </section>
 

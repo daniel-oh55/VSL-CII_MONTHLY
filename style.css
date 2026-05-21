@@ -30,7 +30,7 @@ body {
   min-height: 100vh;
 }
 
-button, input, textarea { font: inherit; }
+button, input, textarea, select { font: inherit; }
 button { border: 0; cursor: pointer; }
 
 .app-shell {
@@ -127,7 +127,7 @@ button { border: 0; cursor: pointer; }
 }
 .upload-card label { color: var(--muted); font-size: 13px; font-weight: 700; }
 
-input, textarea {
+input, textarea, select {
   width: 100%;
   color: var(--text);
   border: 1px solid var(--line);
@@ -136,12 +136,12 @@ input, textarea {
   padding: 12px 13px;
   outline: none;
 }
-input:focus, textarea:focus {
+input:focus, textarea:focus, select:focus {
   border-color: rgba(86, 214, 255, 0.65);
   box-shadow: 0 0 0 4px rgba(86, 214, 255, 0.12);
 }
 
-#analyzeBtn, #downloadBtn, .secondary-btn {
+#analyzeBtn, #downloadBtn, .secondary-btn, .ghost-btn {
   min-height: 44px;
   border-radius: 14px;
   color: #07101f;
@@ -149,6 +149,13 @@ input:focus, textarea:focus {
   background: linear-gradient(135deg, var(--cyan), var(--blue));
 }
 .secondary-btn { padding: 0 14px; min-height: 38px; }
+.ghost-btn {
+  padding: 0 14px;
+  min-height: 38px;
+  color: var(--text);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.08);
+}
 .file-status { margin: 6px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
 
 .validation-panel {
@@ -210,6 +217,85 @@ input:focus, textarea:focus {
 
 .empty, .empty-cell { color: var(--muted); text-align: center; }
 #summaryText { min-height: 210px; resize: vertical; line-height: 1.7; }
+
+.email-layout {
+  display: grid;
+  grid-template-columns: 1fr 0.85fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.email-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.email-card label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.email-card select option {
+  color: #06111f;
+}
+
+#emailBodyInput,
+#recipientTextarea {
+  min-height: 220px;
+  resize: vertical;
+  line-height: 1.65;
+}
+
+#recipientTextarea {
+  min-height: 170px;
+}
+
+.checkbox-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.checkbox-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--cyan);
+}
+
+.email-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.field-help,
+.token-help,
+.recipient-preview {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.recipient-preview,
+.token-help {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.recipient-preview strong,
+.token-help strong {
+  color: var(--text);
+}
 
 .table-actions { display: flex; gap: 10px; align-items: center; }
 .table-actions input { width: 260px; }
@@ -318,7 +404,7 @@ th {
   .app-shell { grid-template-columns: 1fr; }
   .sidebar { position: static; height: auto; }
   .side-note { position: static; margin-top: 18px; }
-  .hero, .dashboard-grid { grid-template-columns: 1fr; }
+  .hero, .dashboard-grid, .email-layout { grid-template-columns: 1fr; }
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
